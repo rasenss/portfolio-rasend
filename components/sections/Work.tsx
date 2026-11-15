@@ -3,25 +3,34 @@
 import { AnimatePresence, motion } from "motion/react";
 import Image from "next/image";
 import { useState } from "react";
-import { projects, type Project, type ProjectKind } from "@/content/profile";
+import type { Project } from "@/lib/content-types";
 import { labels, type Label } from "@/lib/colors";
 import { cn } from "@/lib/cn";
 import { Lightbox } from "@/components/ui/Lightbox";
 import { SectionHeading } from "@/components/ui/Pill";
 
-const kindLabel: Record<ProjectKind, Label> = {
-  "App design": "person",
-  Posters: "org",
-  "LinkedIn posts": "place",
-  Logos: "skill",
+// the usual kinds keep their colours; any new kind you invent gets the next colour in turn
+const knownKinds: Record<string, Label> = {
+  "app design": "person",
+  posters: "org",
+  "linkedin posts": "place",
+  logos: "skill",
 };
+const spare: Label[] = ["role", "person", "org", "place", "skill"];
 
-const kinds = ["All", ...Array.from(new Set(projects.map((p) => p.kind)))] as const;
+function colourFor(kind: string, allKinds: string[]) {
+  const known = knownKinds[kind.toLowerCase()];
+  if (known) return labels[known].color;
+  const n = allKinds.filter((k) => !knownKinds[k.toLowerCase()]).indexOf(kind);
+  return labels[spare[Math.max(0, n) % spare.length]].color;
+}
+
+/** Logos and icons sit on white and are never cropped */
+const isMark = (kind: string) => /logo|icon|brand|emblem/i.test(kind);
 
 /** A project tile. On hover or focus it gets an annotation box labelled with its type. */
-function Tile({ project, index, onOpen }: { project: Project; index: number; onOpen: () => void }) {
-  const color = labels[kindLabel[project.kind]].color;
-  const isLogo = project.kind === "Logos";
+function Tile({ project, index, color, onOpen }: { project: Project; index: number; color: string; onOpen: () => void }) {
+  const isLogo = isMark(project.kind);
   return (
     <button onClick={onOpen} className="zoom group mb-5 block w-full break-inside-avoid text-left" data-i={index}>
       <span className="relative block rounded-[24px] border border-line bg-surface p-2 transition-colors group-hover:border-fg group-focus-visible:border-fg">
@@ -55,8 +64,10 @@ function Tile({ project, index, onOpen }: { project: Project; index: number; onO
   );
 }
 
-export function Work() {
-  const [kind, setKind] = useState<(typeof kinds)[number]>("All");
+export function Work({ projects }: { projects: Project[] }) {
+  const allKinds = Array.from(new Set(projects.map((p) => p.kind)));
+  const kinds = ["All", ...allKinds];
+  const [kind, setKind] = useState("All");
   const [open, setOpen] = useState<Project | null>(null);
   const shown = kind === "All" ? projects : projects.filter((p) => p.kind === kind);
 
@@ -87,7 +98,7 @@ export function Work() {
           className="mt-10 columns-1 gap-5 sm:columns-2 lg:columns-3"
         >
           {shown.map((p, i) => (
-            <Tile key={p.title} project={p} index={i} onOpen={() => setOpen(p)} />
+            <Tile key={p.id} project={p} index={i} color={colourFor(p.kind, allKinds)} onOpen={() => setOpen(p)} />
           ))}
         </motion.div>
       </div>
@@ -95,7 +106,7 @@ export function Work() {
       <AnimatePresence>
         {open && (
           <Lightbox image={open.image} alt={open.title} ratio={open.ratio} title={open.title} meta={open.kind} onClose={() => setOpen(null)}>
-            <p className="text-lg leading-relaxed">{open.description}</p>
+            {open.description && <p className="text-lg leading-relaxed">{open.description}</p>}
             {open.link && (
               <a
                 href={open.link.href}

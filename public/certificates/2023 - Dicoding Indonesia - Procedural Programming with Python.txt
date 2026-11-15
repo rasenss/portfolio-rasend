@@ -1,0 +1,2 @@
+verify: https://www.dicoding.com/certificates/2VX3O526QZYQ
+covers: Python, Data structures

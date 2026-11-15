@@ -1,0 +1,2 @@
+verify: https://www.credential.net/22a4eba3-b7e6-4d25-9a94-5eb790b152bc#acc.BEJKkszy
+covers: Google Cloud, Generative AI

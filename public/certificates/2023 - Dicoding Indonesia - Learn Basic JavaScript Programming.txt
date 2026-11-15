@@ -1,0 +1,2 @@
+verify: https://www.dicoding.com/certificates/07Z64OVORPQR
+covers: JavaScript, DOM

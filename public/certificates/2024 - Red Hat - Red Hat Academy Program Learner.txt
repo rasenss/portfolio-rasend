@@ -1,0 +1,2 @@
+verify: https://www.credly.com/badges/b02f1f65-d245-424f-a0c3-44b9470ea5d3/linked_in_profile
+covers: Linux administration, System management

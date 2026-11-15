@@ -1,0 +1,2 @@
+description: A mobile app for tracking healthy habits: daily progress, goals and challenges, designed in Figma.
+link: Open in Figma | https://www.figma.com/community/file/1347842363347325628/healty-apps-mobile-apps

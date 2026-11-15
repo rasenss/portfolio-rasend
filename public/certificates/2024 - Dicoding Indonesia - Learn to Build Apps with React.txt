@@ -1,0 +1,2 @@
+verify: https://www.dicoding.com/certificates/53XEQV61VXRN
+covers: React, Hooks

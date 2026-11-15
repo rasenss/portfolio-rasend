@@ -1,0 +1,2 @@
+verify: https://www.credential.net/01dc9d67-b5a3-4029-a6d4-a38587897c5d#acc.09FEAiZ
+covers: Cloud infrastructure, Deployment

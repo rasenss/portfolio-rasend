@@ -1,0 +1,2 @@
+verify: https://www.dicoding.com/certificates/4EXGK6EKDZRL
+covers: Agile, Scheduling

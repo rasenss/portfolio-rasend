@@ -1,0 +1,1 @@
+description: A printed coffee menu for a café, laid out by drink type with hot and iced prices.

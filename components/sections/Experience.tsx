@@ -1,16 +1,16 @@
-import { experience, type Experience as Role } from "@/content/profile";
+import { getExperience } from "@/lib/content";
+import type { Experience as Role } from "@/lib/content-types";
 import { SectionHeading } from "@/components/ui/Pill";
 
-/* A role still running sits at the top under "Now", whatever year it started.
-   It counts as running when it is flagged current or its period ends in "now" / "present". */
-const isCurrent = (e: Role) => e.current === true || /\b(now|present)\s*$/i.test(e.period.trim());
-const newestFirst = (a: Role, b: Role) => b.start.localeCompare(a.start);
+const newestFirst = (a: Role, b: Role) => b.start.localeCompare(a.start) || a.company.localeCompare(b.company);
 
-const current = experience.filter(isCurrent).sort(newestFirst);
-const past = experience.filter((e) => !isCurrent(e)).sort(newestFirst);
-const years = Array.from(new Set(past.map((e) => e.start.slice(0, 4))));
-
-const groups = [
+/* Jobs come from content/experience (one file each). A job still running sits at the top
+   under "Now", whatever year it started; the rest are grouped by the year they started. */
+function groupJobs(experience: Role[]) {
+  const current = experience.filter((e) => e.current).sort(newestFirst);
+  const past = experience.filter((e) => !e.current).sort(newestFirst);
+  const years = Array.from(new Set(past.map((e) => e.start.slice(0, 4))));
+  const groups = [
   ...(current.length
     ? [{ key: "now", label: "NOW", note: `${current.length} ${current.length === 1 ? "role" : "roles"} I'm working on`, items: current }]
     : []),
@@ -18,7 +18,9 @@ const groups = [
     const items = past.filter((e) => e.start.startsWith(year));
     return { key: year, label: year, note: `${items.length} ${items.length === 1 ? "role" : "roles"} started this year`, items };
   }),
-];
+  ];
+  return { current, groups };
+}
 
 /**
  * Work history on a "year spine". Each year is set huge in outline and fills
@@ -26,7 +28,8 @@ const groups = [
  * beside its roles (plain CSS sticky). Company names rise out of a mask as
  * they appear. Everything here is CSS: no scripts, nothing to get stuck.
  */
-export function Experience() {
+export async function Experience() {
+  const { current, groups } = groupJobs(await getExperience());
   return (
     <section id="experience" className="relative px-5 py-24 md:px-10 md:py-36">
       <div className="scene mx-auto max-w-6xl">
@@ -50,7 +53,7 @@ export function Experience() {
               {/* the roles */}
               <div className="space-y-16 lg:space-y-20 lg:pt-4">
                 {g.items.map((item) => (
-                  <article key={`${item.company}-${item.start}`} className="zoom-in">
+                  <article key={item.id} className="zoom-in">
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[15px]">
                       <span className="font-bold text-role">{item.period}</span>
                       <span className="text-fg-soft">{item.type}</span>

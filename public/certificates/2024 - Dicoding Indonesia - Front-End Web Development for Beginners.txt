@@ -1,0 +1,2 @@
+verify: https://www.dicoding.com/certificates/RVZKRE6DMPD5
+covers: HTML, CSS, Layout

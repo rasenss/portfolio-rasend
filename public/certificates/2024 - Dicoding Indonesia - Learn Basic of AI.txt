@@ -1,0 +1,2 @@
+verify: https://www.dicoding.com/certificates/L4PQ5NJ77ZO1
+covers: Machine learning concepts, Prompt design

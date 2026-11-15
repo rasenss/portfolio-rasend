@@ -1,0 +1,2 @@
+verify: https://www.dicoding.com/certificates/0LZ09EW20Z65
+covers: Programming logic

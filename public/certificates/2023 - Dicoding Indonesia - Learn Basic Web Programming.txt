@@ -1,0 +1,2 @@
+verify: https://www.dicoding.com/certificates/L4PQ16967XO1
+covers: Semantic HTML, CSS

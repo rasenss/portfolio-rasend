@@ -1,0 +1,2 @@
+verify: https://www.credly.com/badges/a89faf73-7775-432d-be7c-bff1417f4f2e/public_url
+covers: Core AWS services, Cloud security

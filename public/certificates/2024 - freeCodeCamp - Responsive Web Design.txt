@@ -1,0 +1,2 @@
+verify: https://www.freecodecamp.org/certification/rasuen/responsive-web-design
+covers: Flexbox and grid, Accessibility

@@ -1,0 +1,2 @@
+description: Cover for my Dibimbing Data Series project, where I analysed the Chicago Taxi Trips dataset in SQL and BigQuery.
+link: View on LinkedIn | https://www.linkedin.com/posts/rasendriya-khansa_data-series-dibimbing-activity-7232003209798541312-iYpo
