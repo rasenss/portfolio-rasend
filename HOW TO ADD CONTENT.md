@@ -27,10 +27,12 @@ Examples:
 
 - Adding the month (`2027-05`) is optional. It puts certificates from the same year in date order.
 - The list sorts itself: newest year first, then A to Z.
-- **PDF and picture together:** give them the same name, for example `… Title.pdf` and `… Title.png`.
-  The picture is shown, and visitors also get an "Open PDF" button.
-- **PDF only:** that's fine too. It's shown in the viewer, or as a neat "PDF" card where a
-  browser can't show PDFs.
+- **PDF only is enough.** The site draws the PDF's first page as the preview by itself, both
+  in the small hover preview and in the full viewer, on computers and phones, and visitors also
+  get an "Open PDF" button. (If the visitor is offline or the PDF can't be read, a neat "PDF"
+  card or the browser's own PDF viewer shows instead.)
+- **PDF and picture together** (optional): give them the same name, for example `… Title.pdf`
+  and `… Title.png`. The picture is used as the preview, which shows up a moment sooner.
 
 **Optional extras:** add a text file with the **same name** ending in `.txt`, for example
 `2027 - Dicoding Indonesia - Machine Learning for Beginners.txt`:

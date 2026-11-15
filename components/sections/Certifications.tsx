@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import type { Certification } from "@/lib/content-types";
 import { cn } from "@/lib/cn";
 import { Lightbox } from "@/components/ui/Lightbox";
+import { PdfThumb } from "@/components/ui/PdfThumb";
+import { pdfPreview } from "@/lib/pdf-preview";
 import { SectionHeading } from "@/components/ui/Pill";
 
 const PREVIEW_W = 280;
@@ -43,6 +45,24 @@ export function Certifications({ certifications }: { certifications: Certificati
     window.addEventListener("scroll", hide, { passive: true, once: true });
     return () => window.removeEventListener("scroll", hide);
   }, [hovered]);
+
+  // PDF-only certificates: draw their previews as soon as the list comes near the screen,
+  // so the hover preview is ready the first time (desktop only, where that preview exists)
+  useEffect(() => {
+    const pdfOnly = certifications.filter((c) => !c.image && c.pdf);
+    const section = document.getElementById("certificates");
+    if (!pdfOnly.length || !section || !window.matchMedia("(hover: hover) and (min-width: 768px)").matches) return;
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (!e.isIntersecting) return;
+        io.disconnect();
+        pdfOnly.forEach((c) => pdfPreview(c.pdf!, "small").catch(() => {}));
+      },
+      { rootMargin: "600px 0px" },
+    );
+    io.observe(section);
+    return () => io.disconnect();
+  }, [certifications]);
 
   const list = showAll ? certifications : certifications.slice(0, 8);
   const issuers = new Set(certifications.map((c) => c.issuer)).size;
@@ -130,6 +150,8 @@ export function Certifications({ certifications }: { certifications: Certificati
             <div className="relative" style={{ aspectRatio: hovered.ratio }}>
               {hovered.image ? (
                 <Image src={hovered.image} alt="" fill sizes="280px" className="object-contain" />
+              ) : hovered.pdf ? (
+                <PdfThumb src={hovered.pdf} alt="" loading={<PdfCard cert={hovered} />} />
               ) : (
                 <PdfCard cert={hovered} />
               )}

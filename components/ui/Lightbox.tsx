@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { X } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import { PdfThumb } from "@/components/ui/PdfThumb";
 
 type Props = {
   /** picture to show; when missing and there's a PDF, the PDF is shown instead */
@@ -70,14 +71,30 @@ export function Lightbox({ image, pdf, alt, ratio, title, meta, children, onClos
           <div className="relative mx-auto w-full" style={{ aspectRatio: ratio, maxHeight: tall ? "80vh" : "62vh", maxWidth: tall ? undefined : `calc(62vh * ${ratio})` }}>
             {image ? (
               <Image src={image} alt={alt} fill sizes="(max-width: 768px) 100vw, 900px" className="object-contain" />
-            ) : pdf && inlinePdf ? (
-              <iframe src={`${pdf}#toolbar=0&navpanes=0&view=Fit`} title={alt} className="absolute inset-0 h-full w-full border-0 bg-white" />
             ) : pdf ? (
-              <a href={pdf} target="_blank" rel="noreferrer" className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-fg p-6 text-center text-on">
-                <span className="rounded-md border-2 border-on px-2 text-sm font-black">PDF</span>
-                <span className="font-condensed text-2xl font-black uppercase leading-none">{title}</span>
-                <span className="mt-1 rounded-full bg-on px-4 py-2 text-[15px] font-semibold text-fg">Open PDF</span>
-              </a>
+              // the PDF's first page drawn as a picture (works on every device); if that can't
+              // happen, the browser's own PDF viewer, or failing that a button to open it
+              <PdfThumb
+                src={pdf}
+                alt={alt}
+                size="large"
+                loading={
+                  <span className="absolute inset-0 flex items-center justify-center bg-white">
+                    <span className="h-8 w-8 animate-spin rounded-full border-[3px] border-on/15 border-t-on/70" aria-label="Loading the certificate" />
+                  </span>
+                }
+                failed={
+                  inlinePdf ? (
+                    <iframe src={`${pdf}#toolbar=0&navpanes=0&view=Fit`} title={alt} className="absolute inset-0 h-full w-full border-0 bg-white" />
+                  ) : (
+                    <a href={pdf} target="_blank" rel="noreferrer" className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-fg p-6 text-center text-on">
+                      <span className="rounded-md border-2 border-on px-2 text-sm font-black">PDF</span>
+                      <span className="font-condensed text-2xl font-black uppercase leading-none">{title}</span>
+                      <span className="mt-1 rounded-full bg-on px-4 py-2 text-[15px] font-semibold text-fg">Open PDF</span>
+                    </a>
+                  )
+                }
+              />
             ) : null}
           </div>
         </div>
