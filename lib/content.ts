@@ -43,7 +43,13 @@ function warn(file: string, why: string) {
 }
 
 const baseName = (f: string) => f.replace(/\.[^.]+$/, "");
-const url = (dir: string, f: string) => `/${dir.replace(/^public\//, "")}/${encodeURIComponent(f)}`;
+/**
+ * Web address of a file in public/. Pictures keep their plain name (spaces and all): the
+ * image component encodes it exactly once itself, and encoding it here too breaks the
+ * picture on some servers. Links that go straight to a file (PDFs) are encoded here.
+ */
+const imagePath = (dir: string, f: string) => `/${dir.replace(/^public\//, "")}/${f}`;
+const fileLink = (dir: string, f: string) => `/${dir.replace(/^public\//, "")}/${encodeURIComponent(f)}`;
 
 /** "learn_basic-of ai" -> "Learn basic of ai" (only used when a file name doesn't follow the pattern) */
 const tidy = (s: string) => {
@@ -165,8 +171,8 @@ async function readCertificates(_files: string): Promise<Certification[]> {
         issuer,
         year,
         month,
-        image: image ? url(dir, image) : null,
-        pdf: pdf ? url(dir, pdf) : null,
+        image: image ? imagePath(dir, image) : null,
+        pdf: pdf ? fileLink(dir, pdf) : null,
         ratio,
         verify: readLink(fields.verify)?.href,
         covers: splitList(fields.covers ?? fields.topics),
@@ -215,7 +221,7 @@ async function readProjects(_files: string): Promise<Project[]> {
         id: base,
         title,
         kind,
-        image: url(dir, file),
+        image: imagePath(dir, file),
         ratio: mediaRatio(path.join(ROOT, dir, file)) ?? 4 / 3,
         description: fields.description ?? fields.about ?? "",
         link: readLink(fields.link),
