@@ -9,6 +9,7 @@ import { Certifications } from "@/components/sections/Certifications";
 import { Work } from "@/components/sections/Work";
 import { Contact } from "@/components/sections/Contact";
 import { Footer } from "@/components/sections/Footer";
+import { SoundGate } from "@/components/fx/SoundGate";
 
 async function personJsonLd() {
   // the newest job still running (or, failing that, the newest job) describes the work title
@@ -33,6 +34,7 @@ export default async function Home() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <SoundGate />
       <Nav />
       <main>
         <Hero />

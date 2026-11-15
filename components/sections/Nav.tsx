@@ -20,12 +20,37 @@ function HoverBox() {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, transition: { duration: 0.12 } }}
       transition={spring}
-      className="pointer-events-none absolute -inset-x-1 -inset-y-1 rounded-[14px] border-[1.5px] border-dashed border-fg/70"
+      className="pointer-events-none absolute inset-0 rounded-[14px] border-[1.5px] border-dashed border-fg/70"
     >
-      {["-left-[4px] -top-[4px]", "-right-[4px] -top-[4px]", "-left-[4px] -bottom-[4px]", "-right-[4px] -bottom-[4px]"].map((pos) => (
+      {["-left-[3px] -top-[3px]", "-right-[3px] -top-[3px]", "-left-[3px] -bottom-[3px]", "-right-[3px] -bottom-[3px]"].map((pos) => (
         <span key={pos} className={cn("absolute h-[7px] w-[7px] rounded-[2px] border-[1.5px] border-fg bg-base", pos)} />
       ))}
     </motion.span>
+  );
+}
+
+const prefersReducedMotion = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/** A link label that leans a few pixels toward the cursor, then springs back */
+function MagneticLabel({ children, className }: { children: React.ReactNode; className?: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const move = (e: React.PointerEvent) => {
+    const el = ref.current;
+    if (!el || e.pointerType !== "mouse" || prefersReducedMotion()) return;
+    const r = (el.parentElement ?? el).getBoundingClientRect();
+    const dx = ((e.clientX - (r.left + r.width / 2)) / r.width) * 6;
+    const dy = ((e.clientY - (r.top + r.height / 2)) / r.height) * 4;
+    el.style.transform = `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px)`;
+  };
+  const leave = () => {
+    if (ref.current) ref.current.style.transform = "";
+  };
+  return (
+    <span onPointerMove={move} onPointerLeave={leave} className="absolute inset-0 z-[1]">
+      <span ref={ref} className={cn("magnet flex h-full w-full items-center justify-center", className)}>
+        {children}
+      </span>
+    </span>
   );
 }
 
@@ -65,7 +90,7 @@ function SectionName({ text }: { text: string }) {
       <span aria-hidden className="invisible col-start-1 row-start-1">
         {longest}
       </span>
-      <span ref={ref} className="col-start-1 row-start-1" />
+      <span ref={ref} className="col-start-1 row-start-1 w-0 min-w-full overflow-hidden" />
     </span>
   );
 }
@@ -88,11 +113,21 @@ export function Nav() {
   const [hover, setHover] = useState<string | null>(null);
   const focusBrand = useRef(false);
   const brand = useRef<HTMLAnchorElement>(null);
+  const brandText = useRef<HTMLSpanElement>(null);
+  const [scrolled, setScrolled] = useState(false);
   const { scrollY } = useScroll();
+
+  // the name decodes itself when you point at it, like a label being re-read
+  const scrambleBrand = () => {
+    const el = brandText.current;
+    if (!el || prefersReducedMotion()) return;
+    gsap.to(el, { duration: 0.6, scrambleText: { text: profile.firstName, chars: "ABCDEFGHIJKLMNOPQRSTUVWXYZ", speed: 0.7 }, overwrite: true });
+  };
 
   // Fold while reading down the page; unfold on any scroll back up
   useMotionValueEvent(scrollY, "change", (y) => {
     const prev = scrollY.getPrevious() ?? 0;
+    setScrolled(y > 12);
     if (y < 320) setDown(false);
     else if (y > prev + 3) {
       setDown(true);
@@ -152,10 +187,14 @@ export function Nav() {
           style={{ borderRadius: 999 }}
           onPointerEnter={(e) => e.pointerType === "mouse" && setPeek(true)}
           onPointerLeave={(e) => e.pointerType === "mouse" && setPeek(false)}
-          className={cn("glass pointer-events-auto relative flex items-center", compact ? "w-auto" : "w-full max-w-4xl")}
+          className={cn("nav-glass pointer-events-auto relative flex items-center", scrolled && "is-scrolled", compact ? "w-auto" : "w-full max-w-4xl")}
         >
           {/* drawn once on load: a dashed outline traces the bar, then fades as the glass settles */}
           <span aria-hidden className="nav-trace pointer-events-none absolute -inset-px rounded-full border-[1.5px] border-dashed border-role" />
+          {/* each time you enter a new section, a thin amber scan line passes across the glass */}
+          <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-full">
+            <span key={active ?? "top"} className="nav-scan absolute inset-y-0 left-0 w-[2px] bg-role" />
+          </span>
 
           <AnimatePresence mode="popLayout" initial={false}>
             {compact ? (
@@ -195,17 +234,26 @@ export function Nav() {
                 <a
                   ref={brand}
                   href="#top"
+                  onPointerEnter={(e) => e.pointerType === "mouse" && scrambleBrand()}
+                  onFocus={scrambleBrand}
                   onClick={(e) => {
                     if (!lenis) return;
                     e.preventDefault();
                     lenis.scrollTo(0, { duration: 1.2 });
                   }}
-                  className="font-condensed text-lg font-black uppercase tracking-wide"
+                  className="grid font-condensed text-lg font-black uppercase tracking-wide"
                 >
-                  {profile.firstName}
+                  {/* the real name holds the width, so the bar never shifts while letters decode */}
+                  <span aria-hidden className="invisible col-start-1 row-start-1">
+                    {profile.firstName}
+                  </span>
+                  <span ref={brandText} className="col-start-1 row-start-1 w-0 min-w-full overflow-hidden whitespace-nowrap">
+                    {profile.firstName}
+                  </span>
                 </a>
 
-                <ul className="hidden items-center lg:flex" onPointerLeave={() => setHover(null)}>
+                {/* a small gap between links keeps the hover box and its handles clear of the neighbouring pill */}
+                <ul className="hidden items-center gap-1.5 lg:flex" onPointerLeave={() => setHover(null)}>
                   {navLinks.map((l) => (
                     <li key={l.id}>
                       <a
@@ -214,13 +262,15 @@ export function Nav() {
                         onPointerEnter={() => setHover(l.id)}
                         onFocus={() => setHover(l.id)}
                         onBlur={() => setHover(null)}
-                        className="relative block rounded-full px-3.5 py-2 text-[15px] font-medium"
+                        className="relative block rounded-full px-3.5 py-2 text-[15px] font-medium transition-transform duration-150 active:scale-95"
                       >
                         {active === l.id && (
                           <motion.span layoutId="nav-mark" className="absolute inset-0 rounded-full bg-role" transition={spring} />
                         )}
-                        <AnimatePresence>{hover === l.id && <HoverBox key="box" />}</AnimatePresence>
-                        <span className={cn("relative transition-colors", active === l.id && "text-on")}>{l.label}</span>
+                        <AnimatePresence>{hover === l.id && active !== l.id && <HoverBox key="box" />}</AnimatePresence>
+                        {/* the label is laid out once invisibly (sets the size), then shown on top so it can lean toward the cursor */}
+                        <span aria-hidden className="invisible">{l.label}</span>
+                        <MagneticLabel className={cn("transition-colors", active === l.id && "text-on")}>{l.label}</MagneticLabel>
                       </a>
                     </li>
                   ))}

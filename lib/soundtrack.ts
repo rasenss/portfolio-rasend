@@ -7,11 +7,15 @@
  * generated hall reverb. The pads open up (brighter filter) the further down the page
  * you are.
  *
- * Reliability rules this engine follows:
- * - Only the visitor starts it (browsers block sound until a real click, tap or key press),
- *   and the button only shows "on" while sound is actually running.
- * - It keeps playing in the background (it's background music); it only stops when the
- *   visitor turns it off.
+ * How it behaves:
+ * - Music is on by default. Browsers never let a page make sound before the visitor
+ *   interacts, so it starts on their very first click, tap or key press anywhere on the
+ *   page (or straight away, where the browser allows it). The button only shows "on" while
+ *   sound is actually playing.
+ * - It plays the whole time the visitor is on the site, until they turn it off with the
+ *   button. That choice is remembered, so it stays off on their next visit too.
+ * - Switching to another tab, another site or another app on the phone fades it out;
+ *   coming back fades it in again (unless they turned it off).
  * - Every start is a fresh "session" with its own volume control, so notes left over from a
  *   quick off-and-on can never pile up on top of the new ones.
  * - If the scheduler falls behind (busy phone, sleeping laptop), it skips ahead instead of
@@ -54,8 +58,12 @@ class Soundtrack {
   private suspendTimer: ReturnType<typeof setTimeout> | null = null;
   private nextBarAt = 0;
   private bar = 0;
-  /** the visitor wants music */
+  /** the visitor wants music (on by default, until they turn it off) */
   private wanted = false;
+  /** paused because the page is in the background (another tab, site or app) */
+  private away = false;
+  /** the music has played at least once on this page, so the browser will let it resume */
+  private started = false;
   /** sound is actually coming out */
   private running = false;
   private waitingForGesture = false;
@@ -72,6 +80,9 @@ class Soundtrack {
   /** What the button shows: on only while the music is really audible */
   isPlaying = () => this.wanted && this.running;
 
+  /** "on", "off", or "waiting" (on, but waiting for the visitor's first click or tap) */
+  getState = (): "on" | "off" | "waiting" => (this.isPlaying() ? "on" : this.wanted && !this.started ? "waiting" : "off");
+
   private emit() {
     this.listeners.forEach((fn) => fn());
   }
@@ -84,9 +95,24 @@ class Soundtrack {
     }
   }
 
+  /** On unless this visitor turned it off before */
   private wantsSound() {
     try {
-      return localStorage.getItem(STORAGE_KEY) === "on";
+      return localStorage.getItem(STORAGE_KEY) !== "off";
+    } catch {
+      return true;
+    }
+  }
+
+  /** Whether the browser will let sound start right now, without waiting for a click */
+  private canStartNow() {
+    const nav = navigator as Navigator & {
+      userActivation?: { hasBeenActive: boolean };
+      getAutoplayPolicy?: (type: string) => string;
+    };
+    if (nav.userActivation?.hasBeenActive) return true;
+    try {
+      return nav.getAutoplayPolicy?.("audiocontext") === "allowed";
     } catch {
       return false;
     }
@@ -100,17 +126,20 @@ class Soundtrack {
     if (this.wired || typeof window === "undefined") return;
     this.wired = true;
 
-    // Visitors who left the music on last time get it back on their first real interaction
+    // On by default: start now if the browser allows it, otherwise on the first click or tap
     if (this.wantsSound()) {
       this.wanted = true;
-      this.armGesture();
+      if (this.canStartNow() && !document.hidden) this.start();
+      else this.armGesture();
+      this.emit();
     }
 
-    // Coming back to the tab or the phone: make sure audio is still flowing
-    document.addEventListener("visibilitychange", () => {
-      if (!document.hidden) this.ensureRunning();
+    // Another tab, another site, another app: fade out. Back on the site: fade back in.
+    document.addEventListener("visibilitychange", () => (document.hidden ? this.goAway() : this.comeBack()));
+    window.addEventListener("pagehide", () => this.goAway());
+    window.addEventListener("pageshow", () => {
+      if (!document.hidden) this.comeBack();
     });
-    window.addEventListener("pageshow", () => this.ensureRunning());
 
     let frame = 0;
     window.addEventListener(
@@ -126,20 +155,42 @@ class Soundtrack {
     );
   }
 
-  /** Wait for the next click, tap or key press, which browsers accept as permission to play sound */
+  /**
+   * Wait for the next click, tap or key press: the moments browsers accept as permission to
+   * play sound. A mouse press counts straight away; on touch screens it's the end of the tap.
+   */
   private armGesture() {
     if (this.waitingForGesture) return;
     this.waitingForGesture = true;
-    const events = ["click", "touchend", "keydown"] as const;
+    const events = ["pointerdown", "touchend", "click", "keydown"] as const;
     const onGesture = (e: Event) => {
-      // the music button handles its own click
-      if (e.target instanceof Element && e.target.closest("[data-sound-toggle]")) return;
+      // the music button and the welcome screen handle their own clicks
+      if (e.target instanceof Element && e.target.closest("[data-sound-toggle], [data-sound-gate]")) return;
+      if (e instanceof PointerEvent && e.pointerType !== "mouse" && e.pointerType !== "pen") return;
       if (e instanceof KeyboardEvent && (e.key === "Escape" || e.key === "Tab" || e.metaKey || e.ctrlKey || e.altKey)) return;
       events.forEach((t) => window.removeEventListener(t, onGesture, true));
       this.waitingForGesture = false;
-      if (this.wanted && !this.isPlaying()) this.start();
+      if (this.wanted && !this.isPlaying() && !document.hidden) this.start();
     };
     events.forEach((t) => window.addEventListener(t, onGesture, true));
+  }
+
+  /** The page went into the background: fade out quickly and let the audio sleep */
+  private goAway() {
+    if (this.away) return;
+    this.away = true;
+    if (this.timer || this.running) {
+      this.stop(0.35, true);
+      this.running = false;
+      this.emit();
+    }
+  }
+
+  /** Back on the page: fade the music back in, if it's wanted and has played before */
+  private comeBack() {
+    if (!this.away) return;
+    this.away = false;
+    if (this.wanted && this.started) this.start();
   }
 
   private build() {
@@ -189,7 +240,7 @@ class Soundtrack {
         this.running = isRunning;
         this.emit();
       }
-      if (!isRunning && this.wanted && !document.hidden && !this.suspendTimer) this.ensureRunning();
+      if (!isRunning && this.wanted && !this.away && !document.hidden && !this.suspendTimer) this.ensureRunning();
     };
 
     this.ctx = ctx;
@@ -361,8 +412,9 @@ class Soundtrack {
     const resumed = ctx.state === "running" ? Promise.resolve() : ctx.resume();
     resumed
       .then(() => {
-        if (!this.wanted) return; // turned off again before the audio woke up
+        if (!this.wanted || this.away) return; // turned off, or left the page, before the audio woke up
         this.running = ctx.state === "running";
+        if (this.running) this.started = true;
         this.emit();
         if (this.running) begin();
         else this.armGesture(); // the browser still says no: try again on the next interaction
@@ -370,7 +422,8 @@ class Soundtrack {
       .catch(() => this.armGesture());
   }
 
-  private stop() {
+  /** Fade out and stop scheduling; the audio is put to sleep once the fade has finished */
+  private stop(fade = 1.2, sleep = false) {
     if (this.timer) clearInterval(this.timer);
     this.timer = null;
     const ctx = this.ctx;
@@ -379,19 +432,20 @@ class Soundtrack {
     const g = this.master!.gain;
     g.cancelScheduledValues(now);
     g.setValueAtTime(g.value, now);
-    g.linearRampToValueAtTime(0, now + 1.2);
-    this.endSession(this.session, 1.2);
+    g.linearRampToValueAtTime(0, now + fade);
+    this.endSession(this.session, fade);
     this.session = null;
     if (this.suspendTimer) clearTimeout(this.suspendTimer);
     this.suspendTimer = setTimeout(() => {
       this.suspendTimer = null;
-      if (!this.wanted) void ctx.suspend();
-    }, 1400);
+      // asleep when turned off or in the background; awake again if it came back meanwhile
+      if (!this.wanted || (sleep && this.away)) void ctx.suspend();
+    }, (fade + 0.2) * 1000);
   }
 
   /** After coming back to the page, resume if the browser paused the audio meanwhile */
   private ensureRunning() {
-    if (!this.wanted || !this.ctx) return;
+    if (!this.wanted || this.away || !this.ctx) return;
     if (this.ctx.state === "running") {
       if (!this.timer) this.start();
       return;
@@ -406,6 +460,23 @@ class Soundtrack {
       .catch(() => this.armGesture());
   }
 
+  /** The welcome screen's choice: "Enter with sound" (runs inside the click, so the browser allows it) or "Enter quietly" */
+  enter(withSound: boolean) {
+    this.init();
+    if (withSound) {
+      this.wanted = true;
+      this.away = false;
+      this.remember(true);
+      this.start();
+    } else {
+      this.wanted = false;
+      this.remember(false);
+      if (this.timer || this.running) this.stop();
+      this.running = false;
+      this.emit();
+    }
+  }
+
   toggle() {
     if (this.isPlaying()) {
       this.wanted = false;
@@ -415,6 +486,7 @@ class Soundtrack {
       this.emit();
     } else {
       this.wanted = true;
+      this.away = false;
       this.remember(true);
       this.start();
     }

@@ -59,7 +59,6 @@
 @utility glass {
   background: rgb(44 50 56 / 0.62);
   backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
   border: 1px solid rgb(236 231 220 / 0.1);
 }
 
@@ -610,4 +609,103 @@ html.lenis, html.lenis body { height: auto; }
   .new-tag {
     animation: pop-in 0.45s var(--ease-spring) 0.2s both;
   }
+}
+
+/* music waiting for the first click or tap: bars stand a little taller (still, no motion) */
+.eq-bar.is-ready {
+  transform: scaleY(0.5);
+}
+
+/* ---------- navbar glass: see-through frosted bar with a light edge, floating above the page ---------- */
+.nav-glass {
+  background: rgb(35 40 45 / 0.42);
+  backdrop-filter: blur(22px) saturate(165%);
+  border: 1px solid rgb(236 231 220 / 0.16);
+  /* a thin light rim along the top edge, like the edge of a glass pane, and a soft shadow underneath */
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.09),
+    0 10px 30px -14px rgb(0 0 0 / 0.55);
+  transition:
+    background-color 300ms ease,
+    border-color 300ms ease,
+    box-shadow 300ms ease;
+}
+/* once the page scrolls under it, the glass catches a bit more light and lifts higher */
+.nav-glass.is-scrolled {
+  background: rgb(35 40 45 / 0.52);
+  border-color: rgb(236 231 220 / 0.22);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.12),
+    0 18px 40px -16px rgb(0 0 0 / 0.7);
+}
+/* browsers without frosted glass get a solid enough bar to stay readable */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .nav-glass,
+  .nav-glass.is-scrolled {
+    background: rgb(44 50 56 / 0.96);
+  }
+}
+
+/* link labels lean toward the cursor, then spring back */
+.magnet {
+  transition: transform 220ms var(--ease-spring);
+}
+
+/* scan line across the bar on every section change */
+.nav-scan {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .nav-scan {
+    animation: nav-scan 0.9s var(--ease-out-expo) 0.05s both;
+  }
+}
+@keyframes nav-scan {
+  0% { opacity: 0.9; transform: translateX(0); }
+  85% { opacity: 0.9; }
+  100% { opacity: 0; transform: translateX(min(56rem, 92vw)); }
+}
+
+/* ---------- welcome screen with the sound choice (shown before first paint when html has .gate) ---------- */
+.sound-gate {
+  display: none;
+  background: rgb(26 30 34 / 0.5);
+  backdrop-filter: blur(10px);
+  transition: opacity 0.5s ease;
+}
+html.gate .sound-gate,
+.sound-gate.is-leaving {
+  display: flex;
+}
+html.gate {
+  overflow: hidden;
+}
+/* every page animation waits behind the screen, then plays from the start as you enter */
+html.gate body *:not(.sound-gate, .sound-gate *),
+html.gate body *:not(.sound-gate, .sound-gate *)::before,
+html.gate body *:not(.sound-gate, .sound-gate *)::after {
+  animation-play-state: paused !important;
+}
+.gate-panel {
+  transition:
+    transform 0.6s var(--ease-out-expo),
+    opacity 0.45s ease;
+}
+/* leaving: the panel zooms toward you and fades, and the page appears behind it */
+.sound-gate.is-leaving {
+  opacity: 0;
+  pointer-events: none;
+}
+.sound-gate.is-leaving .gate-panel {
+  transform: scale(1.12);
+  opacity: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  html.gate .gate-panel {
+    animation: gate-in 0.7s var(--ease-out-expo) 0.1s both;
+  }
+}
+@keyframes gate-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.96); }
+  to { opacity: 1; transform: none; }
 }
