@@ -7,6 +7,8 @@ import type { Project } from "@/lib/content-types";
 import { labels, type Label } from "@/lib/colors";
 import { cn } from "@/lib/cn";
 import { Lightbox } from "@/components/ui/Lightbox";
+import { NewLabel } from "@/components/ui/NewTag";
+import { useNewSince } from "@/lib/new-since";
 import { SectionHeading } from "@/components/ui/Pill";
 
 // the usual kinds keep their colours; any new kind you invent gets the next colour in turn
@@ -29,7 +31,7 @@ function colourFor(kind: string, allKinds: string[]) {
 const isMark = (kind: string) => /logo|icon|brand|emblem/i.test(kind);
 
 /** A project tile. On hover or focus it gets an annotation box labelled with its type. */
-function Tile({ project, index, color, onOpen }: { project: Project; index: number; color: string; onOpen: () => void }) {
+function Tile({ project, index, color, isNew, onOpen }: { project: Project; index: number; color: string; isNew: boolean; onOpen: () => void }) {
   const isLogo = isMark(project.kind);
   return (
     <button onClick={onOpen} className="zoom group mb-5 block w-full break-inside-avoid text-left" data-i={index}>
@@ -56,7 +58,10 @@ function Tile({ project, index, color, onOpen }: { project: Project; index: numb
           </span>
         </span>
         <span className="block px-2 pb-1.5 pt-3">
-          <span className="block text-lg font-bold leading-snug">{project.title}</span>
+          <span className="block text-lg font-bold leading-snug">
+            {project.title}
+            {isNew && <NewLabel className="ml-2" />}
+          </span>
           <span className="block text-[15px] text-fg-soft">{project.kind}</span>
         </span>
       </span>
@@ -68,13 +73,17 @@ export function Work({ projects }: { projects: Project[] }) {
   const allKinds = Array.from(new Set(projects.map((p) => p.kind)));
   const kinds = ["All", ...allKinds];
   const [kind, setKind] = useState("All");
+  const fresh = useNewSince("work", projects.map((p) => p.id));
   const [open, setOpen] = useState<Project | null>(null);
   const shown = kind === "All" ? projects : projects.filter((p) => p.kind === kind);
 
   return (
     <section id="work" className="relative px-5 py-24 md:px-10 md:py-36">
       <div className="scene mx-auto max-w-6xl">
-        <SectionHeading title="Design work">App screens, posters, LinkedIn covers and logos I&apos;ve designed. Open any piece to see it full size.</SectionHeading>
+        <SectionHeading title="Design work">
+          App screens, posters, LinkedIn covers and logos I&apos;ve designed. Open any piece to see it full size.
+          {fresh.size > 0 && <span className="font-semibold text-role"> {fresh.size} new since your last visit.</span>}
+        </SectionHeading>
 
         <div className="mt-10 flex flex-wrap gap-2" role="group" aria-label="Filter design work">
           {kinds.map((k) => (
@@ -98,7 +107,7 @@ export function Work({ projects }: { projects: Project[] }) {
           className="mt-10 columns-1 gap-5 sm:columns-2 lg:columns-3"
         >
           {shown.map((p, i) => (
-            <Tile key={p.id} project={p} index={i} color={colourFor(p.kind, allKinds)} onOpen={() => setOpen(p)} />
+            <Tile key={p.id} project={p} index={i} color={colourFor(p.kind, allKinds)} isNew={fresh.has(p.id)} onOpen={() => setOpen(p)} />
           ))}
         </motion.div>
       </div>

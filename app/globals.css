@@ -604,3 +604,10 @@ html.lenis, html.lenis body { height: auto; }
   55% { opacity: 1; clip-path: inset(0 0 0 0); }
   100% { opacity: 0; clip-path: inset(0 0 0 0); }
 }
+
+/* ---------- "new since your last visit" label: pops in once ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .new-tag {
+    animation: pop-in 0.45s var(--ease-spring) 0.2s both;
+  }
+}

@@ -7,6 +7,8 @@ import type { Certification } from "@/lib/content-types";
 import { cn } from "@/lib/cn";
 import { Lightbox } from "@/components/ui/Lightbox";
 import { PdfThumb } from "@/components/ui/PdfThumb";
+import { NewLabel } from "@/components/ui/NewTag";
+import { useNewSince } from "@/lib/new-since";
 import { pdfPreview } from "@/lib/pdf-preview";
 import { SectionHeading } from "@/components/ui/Pill";
 
@@ -64,7 +66,9 @@ export function Certifications({ certifications }: { certifications: Certificati
     return () => io.disconnect();
   }, [certifications]);
 
-  const list = showAll ? certifications : certifications.slice(0, 8);
+  const fresh = useNewSince("certificates", certifications.map((c) => c.id));
+  // anything new is always visible, even when the list is folded to 8
+  const list = showAll ? certifications : certifications.filter((c, i) => i < 8 || fresh.has(c.id));
   const issuers = new Set(certifications.map((c) => c.issuer)).size;
 
   // Place the preview beside the cursor, flipping to the left near the right edge
@@ -101,6 +105,7 @@ export function Certifications({ certifications }: { certifications: Certificati
         <SectionHeading title="Certificates">
           {certifications.length} {certifications.length === 1 ? "certificate" : "certificates"}
           {issuers > 0 && ` from ${issuers} ${issuers === 1 ? "organisation" : "organisations"}`}. Open one to see it, or verify it with the issuer.
+          {fresh.size > 0 && <span className="font-semibold text-role"> {fresh.size} new since your last visit.</span>}
         </SectionHeading>
 
         <ul className="mt-12 border-t border-line" onPointerMove={onMove} onPointerLeave={() => setHovered(null)}>
@@ -117,7 +122,10 @@ export function Certifications({ certifications }: { certifications: Certificati
                 className="group grid w-full grid-cols-[3.25rem_minmax(0,1fr)] items-baseline gap-x-4 gap-y-1 py-5 text-left md:grid-cols-[4rem_minmax(0,1fr)_14rem] md:gap-x-8"
               >
                 <span className="text-[15px] font-medium tabular-nums text-fg-soft">{c.year ?? ""}</span>
-                <span className={cn("text-lg font-bold leading-snug transition-colors md:text-xl", hovered === c && "underline decoration-role decoration-[3px] underline-offset-4")}>{c.title}</span>
+                <span className={cn("text-lg font-bold leading-snug transition-colors md:text-xl", hovered === c && "underline decoration-role decoration-[3px] underline-offset-4")}>
+                  {c.title}
+                  {fresh.has(c.id) && <NewLabel className="ml-2" />}
+                </span>
                 <span className="col-start-2 text-[15px] text-fg-soft md:col-start-3 md:text-right">{c.issuer}</span>
               </button>
             </li>

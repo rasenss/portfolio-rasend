@@ -23,7 +23,7 @@ export function Delight() {
   useEffect(() => {
     const original = document.title;
     const onVis = () => {
-      document.title = document.hidden ? "where you going?, come back" : original;
+      document.title = document.hidden ? "come back to site!" : original;
     };
     document.addEventListener("visibilitychange", onVis);
 

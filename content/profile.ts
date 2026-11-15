@@ -77,8 +77,8 @@ export type Skill = { name: string; category: SkillCategory; icon: string };
 
 export const skillCategories: { key: SkillCategory; title: string; label: Label; className: string; confidence: number }[] = [
   { key: "Annotation", title: "AI annotation and evaluation", label: "role", className: "ai_annotation", confidence: 0.99 },
-  { key: "Web", title: "Programming and web", label: "skill", className: "web_dev", confidence: 0.96 },
-  { key: "Design", title: "Design", label: "person", className: "ui_ux_design", confidence: 0.95 },
+  { key: "Design", title: "UI/UX design", label: "person", className: "ui_ux_design", confidence: 0.97 },
+  { key: "Web", title: "Programming and web", label: "skill", className: "web_dev", confidence: 0.95 },
   { key: "Data", title: "Data and analysis", label: "place", className: "data_analysis", confidence: 0.93 },
   { key: "Cloud", title: "Cloud, Linux and security", label: "org", className: "cloud_security", confidence: 0.91 },
   { key: "Business", title: "Project and product", label: "person", className: "product", confidence: 0.88 },
@@ -115,13 +115,13 @@ export type Evidence = { kind: "Role" | "Certificate" | "Project"; title: string
 export const skillEvidence: Record<string, Evidence[]> = {
   "Text and image annotation": [
     { kind: "Role", title: "Data Annotator, OneForma", detail: "Lighthouse project, Apr 2025 to now" },
-    { kind: "Role", title: "AI Language Annotator, RWS", detail: "Lighthouse and Opal, Jul to Aug 2026" },
+    { kind: "Role", title: "AI Language Annotator, RWS", detail: "Echo project, Jul to Aug 2026" },
   ],
   "Preference ranking": [
     { kind: "Role", title: "Data Annotator, OneForma", detail: "Preference-ranking evaluations for Lighthouse" },
     { kind: "Role", title: "AI Language Annotator, RWS", detail: "Two concurrent workstreams" },
   ],
-  "Rubric-based evaluation": [{ kind: "Role", title: "Natural Language Annotator, OneForma", detail: "Fred project, Sep 2026" }],
+  "Rubric-based evaluation": [{ kind: "Role", title: "Natural Language Annotator, OneForma", detail: "Fred project, Sep 2026 to now" }],
   "Golden response writing": [{ kind: "Role", title: "Natural Language Annotator, OneForma", detail: "Accuracy benchmarks for AI answers" }],
   "Cross-modal alignment": [
     { kind: "Role", title: "Data Annotator, OneForma", detail: "Image–text pair reviews" },

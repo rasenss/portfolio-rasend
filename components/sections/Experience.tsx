@@ -1,6 +1,7 @@
 import { getExperience } from "@/lib/content";
 import type { Experience as Role } from "@/lib/content-types";
 import { SectionHeading } from "@/components/ui/Pill";
+import { NewCount, NewTag } from "@/components/ui/NewTag";
 
 const newestFirst = (a: Role, b: Role) => b.start.localeCompare(a.start) || a.company.localeCompare(b.company);
 
@@ -29,12 +30,15 @@ function groupJobs(experience: Role[]) {
  * they appear. Everything here is CSS: no scripts, nothing to get stuck.
  */
 export async function Experience() {
-  const { current, groups } = groupJobs(await getExperience());
+  const jobs = await getExperience();
+  const { current, groups } = groupJobs(jobs);
+  const ids = jobs.map((j) => j.id);
   return (
     <section id="experience" className="relative px-5 py-24 md:px-10 md:py-36">
       <div className="scene mx-auto max-w-6xl">
         <SectionHeading title="Where I've worked">
           {current.length ? "What I'm working on now comes first, then everything else from newest to oldest." : "Newest first."}
+          <NewCount scope="experience" all={ids} />
         </SectionHeading>
 
         <div className="mt-16 space-y-24 lg:mt-20 lg:space-y-36">
@@ -57,6 +61,7 @@ export async function Experience() {
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[15px]">
                       <span className="font-bold text-role">{item.period}</span>
                       <span className="text-fg-soft">{item.type}</span>
+                      <NewTag scope="experience" id={item.id} all={ids} />
                     </div>
                     <h4 className="mask-in mt-3 font-condensed text-[clamp(2.7rem,6.5vw,5.4rem)] font-black uppercase leading-[0.86]">
                       {item.company}

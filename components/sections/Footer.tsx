@@ -124,6 +124,41 @@ function LatinQuote() {
   );
 }
 
+/** Share the site: the phone's own share sheet where there is one, otherwise copy the link */
+function ShareButton() {
+  const [label, setLabel] = useState("Share this site");
+  const flash = (text: string) => {
+    setLabel(text);
+    setTimeout(() => setLabel("Share this site"), 2200);
+  };
+  const share = async () => {
+    const url = window.location.origin;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: document.title, text: `${profile.name}, AI data annotator and UI/UX designer`, url });
+        return;
+      } catch (e) {
+        if ((e as DOMException).name === "AbortError") return; // closed the share sheet
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      flash("Link copied");
+    } catch {
+      flash(url.replace(/^https?:\/\//, ""));
+    }
+  };
+  return (
+    <button
+      onClick={share}
+      aria-live="polite"
+      className="btn-sweep flex w-max items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 font-medium text-fg transition-colors hover:text-on"
+    >
+      {label}
+    </button>
+  );
+}
+
 export function Footer() {
   const lenis = useLenis();
 
@@ -142,12 +177,15 @@ export function Footer() {
       <div className="mx-auto mt-10 flex max-w-6xl flex-col gap-6 border-t border-line pt-8 text-[15px] text-fg-soft sm:flex-row sm:items-center sm:justify-between">
         <p>© 2026 {profile.name}. Built in Pacitan with Next.js.</p>
         <p className="hidden md:block">Try typing “qa”, clicking my name, or Shift-dragging anywhere.</p>
-        <button
-          onClick={() => (lenis ? lenis.scrollTo(0, { duration: 1.4 }) : window.scrollTo({ top: 0, behavior: "smooth" }))}
-          className="btn-sweep flex w-max items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 font-medium text-fg transition-colors hover:text-on"
-        >
-          Back to top
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <ShareButton />
+          <button
+            onClick={() => (lenis ? lenis.scrollTo(0, { duration: 1.4 }) : window.scrollTo({ top: 0, behavior: "smooth" }))}
+            className="btn-sweep flex w-max items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 font-medium text-fg transition-colors hover:text-on"
+          >
+            Back to top
+          </button>
+        </div>
       </div>
     </footer>
   );
