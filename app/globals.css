@@ -583,3 +583,24 @@ html.lenis, html.lenis body { height: auto; }
   from { transform: scaleY(0.25); }
   to { transform: scaleY(1); }
 }
+
+/* ---------- nav: drops in, and a dashed outline traces it once, like a box being drawn ---------- */
+.nav-trace {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .nav-in {
+    animation: nav-drop 0.8s var(--ease-out-expo) 0.1s backwards;
+  }
+  .nav-trace {
+    animation: nav-trace 1.6s var(--ease-out-expo) 0.2s both;
+  }
+}
+@keyframes nav-drop {
+  from { opacity: 0; transform: translateY(-28px); }
+}
+@keyframes nav-trace {
+  0% { opacity: 1; clip-path: inset(0 100% 0 0); }
+  55% { opacity: 1; clip-path: inset(0 0 0 0); }
+  100% { opacity: 0; clip-path: inset(0 0 0 0); }
+}

@@ -7,53 +7,15 @@ import { cn } from "@/lib/cn";
 /**
  * Round button in the nav that turns the background music on and off.
  * Four bars move like a level meter while it plays and lie flat when it is off.
+ * All the audio logic lives in one shared engine (lib/soundtrack), so this button can
+ * appear in several places (full nav, folded nav) without anything doubling up.
  */
 export function SoundToggle({ className }: { className?: string }) {
   const playing = useSyncExternalStore(soundtrack.subscribe, soundtrack.isPlaying, () => false);
 
   useEffect(() => {
-    // Someone who turned the music on last time gets it back on their first click or key press
-    // (browsers never let a page start sound on its own). The toggle itself is left to its own click.
-    const resume = (e: Event) => {
-      const t = e.target;
-      if (t instanceof Element && t.closest("[data-sound-toggle]")) return;
-      soundtrack.play();
-      off();
-    };
-    const off = () => {
-      window.removeEventListener("pointerdown", resume, true);
-      window.removeEventListener("keydown", resume, true);
-    };
-    if (soundtrack.wantsSound()) {
-      window.addEventListener("pointerdown", resume, true);
-      window.addEventListener("keydown", resume, true);
-    }
-
-    const onVisibility = () => soundtrack.setBackground(document.hidden);
-    let frame = 0;
-    const onScroll = () => {
-      if (frame || !soundtrack.isPlaying()) return;
-      frame = requestAnimationFrame(() => {
-        frame = 0;
-        const max = document.documentElement.scrollHeight - window.innerHeight;
-        soundtrack.setDepth(max > 0 ? window.scrollY / max : 0);
-      });
-    };
-    document.addEventListener("visibilitychange", onVisibility);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      off();
-      if (frame) cancelAnimationFrame(frame);
-      document.removeEventListener("visibilitychange", onVisibility);
-      window.removeEventListener("scroll", onScroll);
-    };
+    soundtrack.init();
   }, []);
-
-  useEffect(() => {
-    if (!playing) return;
-    const max = document.documentElement.scrollHeight - window.innerHeight;
-    soundtrack.setDepth(max > 0 ? window.scrollY / max : 0);
-  }, [playing]);
 
   return (
     <button

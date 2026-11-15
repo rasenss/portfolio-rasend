@@ -20,8 +20,8 @@ export const metadata: Metadata = {
     template: "%s | Rasendriya Khansa Jolankarfyan",
   },
   description:
-    "Final-year Computer Science student in Indonesia working in AI data annotation, language evaluation and golden-response writing, who also builds front-end interfaces in React.",
-  keywords: ["Rasendriya Khansa", "AI data annotator", "language evaluator", "front-end developer", "React", "Indonesia", "portfolio"],
+    "Final-year Computer Science student at Siber Muhammadiyah University working as an AI data annotator (text annotation, image annotation and rubric-based evaluation) and designing interfaces as a UI/UX designer in Figma.",
+  keywords: ["Rasendriya Khansa", "AI data annotator", "text annotation", "image annotation", "rubric-based evaluation", "UI/UX designer", "Figma", "Siber Muhammadiyah University", "Indonesia", "portfolio"],
   authors: [{ name: "Rasendriya Khansa Jolankarfyan" }],
   openGraph: { type: "website", locale: "en_US", siteName: "Rasendriya Khansa", url: SITE },
   twitter: { card: "summary_large_image" },

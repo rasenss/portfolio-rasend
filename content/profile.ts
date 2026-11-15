@@ -22,7 +22,7 @@ export const profile = {
     discord: "https://discord.com/users/_.rasend",
   },
   summary:
-    "I'm a final-year Computer Science student with over a year of hands-on work in AI data annotation and language evaluation, currently on active evaluation projects at OneForma. My days are rubric-based evaluation, golden-response writing and checking that images and their captions actually match. A grounding in HTML, CSS, JavaScript, React and SQL means I also build the interfaces people use.",
+    "I'm a final-year Computer Science student at Siber Muhammadiyah University, where I've studied since 2022 and hold a 3.51 GPA. Alongside my degree I've spent over a year as an AI data annotator, now on active projects at OneForma: annotating text, annotating images and checking they match their captions, and scoring AI answers against detailed rubrics. I also work as a UI/UX designer, designing interfaces in Figma.",
 };
 
 /**
@@ -33,27 +33,29 @@ export type Segment = string | { text: string; type: Label };
 
 export const intro: Segment[][] = [
   [
-    "I'm a ",
+    "I'm a final-year ",
     { text: "Computer Science student", type: "role" },
     " at ",
     { text: "Siber Muhammadiyah University", type: "org" },
-    ", an ",
+    ", studying from ",
+    { text: "Pacitan, East Java", type: "place" },
+    " since 2022.",
+  ],
+  [
+    "Alongside my degree I'm an ",
     { text: "AI data annotator", type: "role" },
     " at ",
     { text: "OneForma", type: "org" },
-    " and a ",
-    { text: "UI/UX designer", type: "role" },
-    ", working from ",
-    { text: "Pacitan, East Java", type: "place" },
-    ".",
-  ],
-  [
-    "I check how AI models read text and images, write the ",
-    { text: "golden responses", type: "skill" },
-    " they learn from, and design and build interfaces in ",
-    { text: "Figma", type: "skill" },
+    ", doing ",
+    { text: "text annotation", type: "skill" },
+    ", ",
+    { text: "image annotation", type: "skill" },
     " and ",
-    { text: "React", type: "skill" },
+    { text: "rubric-based evaluation", type: "skill" },
+    ". I also design interfaces as a ",
+    { text: "UI/UX designer", type: "role" },
+    " in ",
+    { text: "Figma", type: "skill" },
     ".",
   ],
 ];
