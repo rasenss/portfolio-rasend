@@ -175,6 +175,19 @@ export function Nav() {
     lenis.scrollTo(`#${id}`, { offset: -24, duration: 1.2 });
   };
 
+  // "Email me" goes to the contact form (Gmail, email app or copy), which works for everyone,
+  // even without an email app set up; the cursor lands in the message box ready to type
+  const emailMe = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setOpen(false);
+    const focusMessage = () => document.getElementById("c-msg")?.focus({ preventScroll: true });
+    if (lenis) lenis.scrollTo("#contact", { offset: -24, duration: 1.2, onComplete: focusMessage });
+    else {
+      document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
+      window.setTimeout(focusMessage, 900);
+    }
+  };
+
   const index = active ? navLinks.findIndex((l) => l.id === active) + 1 : 0;
   const label = active ? (navLinks.find((l) => l.id === active)?.label ?? "Intro") : "Intro";
 
@@ -278,7 +291,7 @@ export function Nav() {
 
                 <div className="flex items-center gap-1.5">
                   <SoundToggle />
-                  <a href={`mailto:${profile.email}`} className="btn-sweep hidden rounded-full bg-fg px-4 py-2 text-[15px] font-semibold text-on sm:block">
+                  <a href="#contact" onClick={emailMe} className="btn-sweep hidden rounded-full bg-fg px-4 py-2 text-[15px] font-semibold text-on sm:block">
                     Email me
                   </a>
                   <button
@@ -322,7 +335,7 @@ export function Nav() {
                 {l.label}
               </motion.a>
             ))}
-            <a href={`mailto:${profile.email}`} className="mt-8 px-2 text-lg font-medium text-fg-soft underline underline-offset-4">
+            <a href="#contact" onClick={emailMe} className="mt-8 px-2 text-lg font-medium text-fg-soft underline underline-offset-4">
               {profile.email}
             </a>
           </motion.div>

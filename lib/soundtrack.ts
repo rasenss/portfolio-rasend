@@ -1,11 +1,14 @@
 /**
- * A small generative soundtrack, made live with the Web Audio API (no audio file to load).
+ * A small soundtrack in the style of Mozart, played live in the browser (no audio file).
  *
- * D minor, about 70 BPM: warm detuned pads move through Dm9, Bbmaj7, Fadd9 and Csus2,
- * a sine bass sits under each chord, a soft low pulse marks every bar, and a sparse
- * plucked line wanders over the top, never the same twice. Everything goes through a
- * generated hall reverb. The pads open up (brighter filter) the further down the page
- * you are.
+ * An original piece written in the Classical style: a singing right-hand melody over an
+ * Alberti bass (the low-high-middle-high left-hand pattern Mozart used everywhere), in
+ * C major, Allegretto (about 112 beats a minute). It has a 24-bar form: a theme that ends on a half cadence and
+ * then a full cadence, a middle part that moves to G major, and the theme again. Every
+ * second time through it plays as a variation, the way Mozart wrote sets of variations:
+ * the melody gains little turns and the left hand runs in sixteenths. The piano is
+ * synthesised (bright hammer, warm decay), with a soft string pad underneath and a concert
+ * hall reverb. The strings open up a little the further down the page you are.
  *
  * How it behaves:
  * - Music is on by default. Browsers never let a page make sound before the visitor
@@ -13,7 +16,7 @@
  *   page (or straight away, where the browser allows it). The button only shows "on" while
  *   sound is actually playing.
  * - It plays the whole time the visitor is on the site, until they turn it off with the
- *   button. That choice is remembered, so it stays off on their next visit too.
+ *   button. That choice lasts for this visit only: every new visit starts with music on.
  * - Switching to another tab, another site or another app on the phone fades it out;
  *   coming back fades it in again (unless they turned it off).
  * - Every start is a fresh "session" with its own volume control, so notes left over from a
@@ -26,27 +29,64 @@
 
 type Listener = () => void;
 
-const BPM = 70;
+const BPM = 112; // Allegretto: lively, but still relaxed enough for background listening
 const BEAT = 60 / BPM;
 const BAR = BEAT * 4;
-const VOLUME = 0.55;
+const VOLUME = 0.6;
 const LOOKAHEAD = 2; // seconds of music scheduled ahead of time
 const STORAGE_KEY = "rk-sound";
+const FORM = 24; // bars: theme (8), middle part (8), theme again (8)
 
-// MIDI notes: pad voicing and bass root for each chord, two bars each
-const CHORDS: { pad: number[]; bass: number }[] = [
-  { pad: [50, 53, 57, 64], bass: 38 }, // Dm9
-  { pad: [50, 53, 57, 58], bass: 34 }, // Bbmaj7 (over Bb)
-  { pad: [53, 57, 60, 67], bass: 41 }, // Fadd9
-  { pad: [48, 55, 62, 64], bass: 36 }, // Csus2 with the 3rd on top
+/* Left hand: Alberti figures (low, high, middle, high) and the string pad for each harmony */
+const HARMONY: Record<string, { alberti: number[]; pad: number[] }> = {
+  C: { alberti: [48, 55, 52, 55], pad: [48, 55, 64] },
+  G7: { alberti: [47, 53, 50, 53], pad: [47, 53, 62] },
+  G: { alberti: [43, 50, 47, 50], pad: [43, 55, 62] },
+  F: { alberti: [48, 57, 53, 57], pad: [53, 57, 60] },
+  D7: { alberti: [48, 54, 50, 54], pad: [50, 54, 60] },
+  Am: { alberti: [45, 52, 48, 52], pad: [45, 52, 60] },
+};
+
+/** Harmony of each bar; "D7|G" means two beats of each */
+const CHORDS_A = ["C", "G7", "C", "G", "C", "F", "G7", "C"];
+const CHORDS_B = ["G", "D7", "G", "D7|G", "Am", "D7", "G7", "G7"];
+
+/** Right-hand melody: [beat, length in beats, MIDI note] for each bar */
+type Note = [number, number, number];
+const MELODY_A: Note[][] = [
+  [[0, 2, 72], [2, 1, 76], [3, 1, 79]],
+  [[0, 1.5, 77], [1.5, 0.5, 76], [2, 1, 74], [3, 1, 67]],
+  [[0, 1, 79], [1, 0.5, 81], [1.5, 0.5, 79], [2, 1, 76], [3, 1, 72]],
+  [[0, 1.5, 74], [1.5, 0.25, 76], [1.75, 0.25, 77], [2, 2, 74]],
+  [[0, 2, 72], [2, 1, 76], [3, 1, 79]],
+  [[0, 2, 81], [2, 1, 84], [3, 1, 81]],
+  [[0, 0.5, 79], [0.5, 0.5, 77], [1, 0.5, 76], [1.5, 0.5, 74], [2, 1, 77], [3, 1, 71]],
+  [[0, 3, 72]],
 ];
-// D minor pentatonic for the plucked line
-const PLUCK_NOTES = [62, 65, 67, 69, 72, 74, 77];
+const MELODY_B: Note[][] = [
+  [[0, 2, 83], [2, 0.5, 81], [2.5, 0.5, 79], [3, 0.5, 78], [3.5, 0.5, 79]],
+  [[0, 1, 81], [1, 1, 78], [2, 2, 74]],
+  [[0, 0.5, 79], [0.5, 0.5, 81], [1, 0.5, 83], [1.5, 0.5, 84], [2, 1, 86], [3, 1, 83]],
+  [[0, 1, 81], [1, 1, 84], [2, 2, 83]],
+  [[0, 2, 84], [2, 1, 81], [3, 1, 76]],
+  [[0, 1, 78], [1, 1, 81], [2, 1, 84], [3, 1, 81]],
+  [[0, 2, 79], [2, 0.5, 77], [2.5, 0.5, 76], [3, 0.5, 74], [3.5, 0.5, 77]],
+  [[0, 2, 74], [2, 1, 71], [3, 1, 67]],
+];
+
+/** Scales for ornaments: C major, and G major (with F sharp) in the middle part */
+const C_MAJOR = [0, 2, 4, 5, 7, 9, 11];
+const G_MAJOR = [0, 2, 4, 6, 7, 9, 11];
+const stepFrom = (note: number, dir: 1 | -1, scale: number[]) => {
+  let n = note + dir;
+  while (!scale.includes(((n % 12) + 12) % 12)) n += dir;
+  return n;
+};
 
 const hz = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12);
 
 /** Where a session's notes enter the shared mix; muting these silences that session's notes */
-type Session = { pad: GainNode; wet: GainNode; dry: GainNode };
+type Session = { pad: GainNode; piano: GainNode };
 
 class Soundtrack {
   private ctx: AudioContext | null = null;
@@ -89,7 +129,7 @@ class Soundtrack {
 
   private remember(on: boolean) {
     try {
-      localStorage.setItem(STORAGE_KEY, on ? "on" : "off");
+      sessionStorage.setItem(STORAGE_KEY, on ? "on" : "off");
     } catch {
       /* storage can be blocked; the toggle still works for this visit */
     }
@@ -98,7 +138,7 @@ class Soundtrack {
   /** On unless this visitor turned it off before */
   private wantsSound() {
     try {
-      return localStorage.getItem(STORAGE_KEY) !== "off";
+      return sessionStorage.getItem(STORAGE_KEY) !== "off";
     } catch {
       return true;
     }
@@ -227,6 +267,7 @@ class Soundtrack {
     wet.gain.value = 0.55;
     bus.connect(reverb).connect(wet).connect(master);
 
+    // strings: a soft filtered pad that opens up as you scroll down the page
     const padFilter = ctx.createBiquadFilter();
     padFilter.type = "lowpass";
     padFilter.frequency.value = 700;
@@ -264,24 +305,23 @@ class Soundtrack {
   private newSession(): Session {
     const ctx = this.ctx!;
     const pad = ctx.createGain();
-    const wet = ctx.createGain();
-    const dry = ctx.createGain();
+    const piano = ctx.createGain();
     pad.connect(this.padFilter!);
-    wet.connect(this.bus!);
-    dry.connect(this.master!);
-    return { pad, wet, dry };
+    piano.connect(this.bus!);
+    return { pad, piano };
   }
 
   /** Silence a session's leftover notes, then unplug it */
   private endSession(s: Session | null, fade: number) {
     if (!s || !this.ctx) return;
     const now = this.ctx.currentTime;
-    [s.pad, s.wet, s.dry].forEach((g) => {
+    const nodes = [s.pad, s.piano];
+    nodes.forEach((g) => {
       g.gain.cancelScheduledValues(now);
       g.gain.setValueAtTime(g.gain.value, now);
       g.gain.linearRampToValueAtTime(0, now + fade);
     });
-    setTimeout(() => [s.pad, s.wet, s.dry].forEach((g) => g.disconnect()), (fade + 0.2) * 1000);
+    setTimeout(() => nodes.forEach((g) => g.disconnect()), (fade + 0.2) * 1000);
   }
 
   private osc(type: OscillatorType, freq: number, at: number, stopAt: number, out: AudioNode, detune = 0) {
@@ -296,68 +336,97 @@ class Soundtrack {
     return o;
   }
 
+  /** strings: a soft held chord underneath the piano */
   private pad(s: Session, notes: number[], at: number, length: number) {
     const ctx = this.ctx!;
-    const attack = 2.4;
-    const release = 3.2;
     notes.forEach((n) => {
       const g = ctx.createGain();
       g.gain.setValueAtTime(0, at);
-      g.gain.linearRampToValueAtTime(0.045, at + attack);
-      g.gain.setValueAtTime(0.045, at + length);
-      g.gain.linearRampToValueAtTime(0, at + length + release);
+      g.gain.linearRampToValueAtTime(0.026, at + 0.9);
+      g.gain.setValueAtTime(0.026, at + length);
+      g.gain.linearRampToValueAtTime(0, at + length + 1.2);
       g.connect(s.pad);
-      [-7, 7].forEach((cents) => this.osc("sawtooth", hz(n), at, at + length + release + 0.1, g, cents));
+      [-5, 5].forEach((cents) => this.osc("sawtooth", hz(n), at, at + length + 1.3, g, cents));
     });
   }
 
-  private bass(s: Session, note: number, at: number, length: number) {
-    const g = this.ctx!.createGain();
-    g.gain.setValueAtTime(0, at);
-    g.gain.linearRampToValueAtTime(0.2, at + 0.6);
-    g.gain.setValueAtTime(0.2, at + length - 0.4);
-    g.gain.linearRampToValueAtTime(0, at + length + 0.6);
-    g.connect(s.dry);
-    this.osc("sine", hz(note), at, at + length + 0.7, g);
-  }
-
-  /** A soft, low heartbeat on the first beat of every bar */
-  private pulse(s: Session, at: number) {
-    const g = this.ctx!.createGain();
-    g.gain.setValueAtTime(0.0001, at);
-    g.gain.exponentialRampToValueAtTime(0.16, at + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001, at + 0.55);
-    g.connect(s.dry);
-    const o = this.osc("sine", 92, at, at + 0.6, g);
-    o.frequency.setValueAtTime(92, at);
-    o.frequency.exponentialRampToValueAtTime(44, at + 0.35);
-  }
-
-  private pluck(s: Session, note: number, at: number) {
+  /**
+   * A synthesised piano note: a few harmonics, each fading at its own speed (the higher ones
+   * faster), a bright hammer attack that mellows as a filter closes, and a soft release.
+   */
+  private piano(s: Session, note: number, at: number, length: number, velocity: number, level: number) {
     const ctx = this.ctx!;
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, at);
-    g.gain.exponentialRampToValueAtTime(0.07, at + 0.01);
-    g.gain.exponentialRampToValueAtTime(0.0001, at + 1.4);
-    const f = ctx.createBiquadFilter();
-    f.type = "lowpass";
-    f.frequency.value = 2600;
-    g.connect(f).connect(s.wet);
-    this.osc("triangle", hz(note), at, at + 1.5, g);
+    const f = hz(note);
+    const peak = level * velocity;
+    const ring = Math.max(length, 0.25);
+    const tone = ctx.createBiquadFilter();
+    tone.type = "lowpass";
+    tone.frequency.setValueAtTime(Math.min(9000, f * 9), at);
+    tone.frequency.exponentialRampToValueAtTime(Math.max(900, f * 2.5), at + 1.2);
+    tone.connect(s.piano);
+    const partials: [number, number, number][] = [
+      // [harmonic, loudness, how long it rings in seconds]
+      [1, 1, 2.6],
+      [2.001, 0.42, 1.4],
+      [3.003, 0.18, 0.8],
+      [4.007, 0.08, 0.45],
+    ];
+    partials.forEach(([h, amt, decay]) => {
+      const g = ctx.createGain();
+      const top = peak * amt;
+      g.gain.setValueAtTime(0.0001, at);
+      g.gain.exponentialRampToValueAtTime(top, at + 0.005);
+      g.gain.exponentialRampToValueAtTime(Math.max(0.0001, top * 0.35), at + Math.min(decay, ring));
+      g.gain.setValueAtTime(Math.max(0.0001, top * 0.3), at + ring);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + ring + 0.35);
+      g.connect(tone);
+      this.osc("sine", f * h, at, at + ring + 0.4, g);
+    });
   }
 
+  /** Plays one bar of the piece (24-bar form; every second time through as a variation) */
   private scheduleBar(s: Session, bar: number, at: number) {
-    const chord = CHORDS[Math.floor(bar / 2) % CHORDS.length];
-    if (bar % 2 === 0) {
-      this.pad(s, chord.pad, at, BAR * 2);
-      this.bass(s, chord.bass, at, BAR * 2);
+    const inForm = bar % FORM;
+    const variation = Math.floor(bar / FORM) % 2 === 1;
+    const middle = inForm >= 8 && inForm < 16;
+    const section = inForm % 8;
+    const melody = (middle ? MELODY_B : MELODY_A)[section];
+    const chords = (middle ? CHORDS_B : CHORDS_A)[section].split("|");
+    const scale = middle ? G_MAJOR : C_MAJOR;
+    const human = () => (Math.random() - 0.5) * 0.012; // a few milliseconds, like a real player
+
+    // left hand: Alberti bass, eighths in the theme, sixteenths in the variation
+    const perBeat = variation ? 4 : 2;
+    const notesInBar = 4 * perBeat;
+    for (let i = 0; i < notesInBar; i++) {
+      const beat = i / perBeat;
+      const chord = HARMONY[chords[chords.length > 1 && beat >= 2 ? 1 : 0]];
+      const n = chord.alberti[i % 4];
+      const vel = (i % perBeat === 0 ? 0.8 : 0.6) + Math.random() * 0.08;
+      this.piano(s, n, at + beat * BEAT + human(), BEAT / perBeat, vel, variation ? 0.09 : 0.11);
     }
-    this.pulse(s, at);
-    // the plucked line: a few eighth notes per bar, never the same pattern twice
-    for (let step = 0; step < 8; step++) {
-      const chance = step === 0 ? 0.15 : step % 2 === 0 ? 0.32 : 0.18;
-      if (Math.random() < chance) this.pluck(s, PLUCK_NOTES[Math.floor(Math.random() * PLUCK_NOTES.length)], at + step * (BEAT / 2));
-    }
+    // a low root on the first beat of each harmony, for depth
+    chords.forEach((name, half) => {
+      const root = HARMONY[name].alberti[0] - 12;
+      this.piano(s, root, at + half * 2 * BEAT, chords.length > 1 ? 2 * BEAT : 3.5 * BEAT, 0.55, 0.1);
+      this.pad(s, HARMONY[name].pad, at + half * 2 * BEAT, (chords.length > 1 ? 2 : 4) * BEAT);
+    });
+
+    // right hand: the melody; in the variation, long notes open with a little turn
+    melody.forEach(([beat, len, note], i) => {
+      const t = at + beat * BEAT + human();
+      const vel = (beat === 0 ? 0.95 : 0.8) + Math.random() * 0.08;
+      if (variation && len >= 1) {
+        const sixteenth = BEAT / 4;
+        const turn = [note, stepFrom(note, 1, scale), note, stepFrom(note, -1, scale)];
+        turn.forEach((n, k) => this.piano(s, n, t + k * sixteenth, sixteenth, vel * (k === 0 ? 1 : 0.78), 0.21));
+        this.piano(s, note, t + BEAT, (len - 1) * BEAT || sixteenth * 2, vel * 0.85, 0.21);
+      } else {
+        this.piano(s, note, t, len * BEAT, vel, 0.21);
+      }
+      // the very last note of the theme gets a gentle octave below, to round the cadence
+      if (!middle && section === 7 && i === 0) this.piano(s, note - 12, t, len * BEAT, 0.6, 0.14);
+    });
   }
 
   private tick = () => {
@@ -458,6 +527,19 @@ class Soundtrack {
         } else this.armGesture();
       })
       .catch(() => this.armGesture());
+  }
+
+  /**
+   * Some browsers already allow sound without a click (the visitor allowed sound for this
+   * site, or plays media here often). Find out by opening the audio and seeing if it runs;
+   * if it does, the music starts with no click at all.
+   */
+  tryAutoplay(): boolean {
+    if (typeof window === "undefined" || document.hidden) return false;
+    if (!this.ctx && !this.build()) return false;
+    if (this.ctx!.state !== "running") return false;
+    this.enter(true);
+    return true;
   }
 
   /** The welcome screen's choice: "Enter with sound" (runs inside the click, so the browser allows it) or "Enter quietly" */

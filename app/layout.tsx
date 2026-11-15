@@ -38,11 +38,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={archivo.variable} suppressHydrationWarning>
       <head>
         {/* Decides before the first paint whether to show the welcome screen, so it never flashes:
-            shown unless this visitor chose quiet before, or the browser already allows sound. */}
+            shown on every new visit, unless the visitor chose quiet earlier in this visit or the
+            browser already allows sound. */}
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "try{var s=localStorage.getItem('rk-sound'),n=navigator,p=n.getAutoplayPolicy&&n.getAutoplayPolicy('audiocontext');if(s!=='off'&&p!=='allowed')document.documentElement.classList.add('gate')}catch(e){}",
+              "try{var s=sessionStorage.getItem('rk-sound'),n=navigator,p=n.getAutoplayPolicy&&n.getAutoplayPolicy('audiocontext');if(s!=='off'&&p!=='allowed')document.documentElement.classList.add('gate')}catch(e){}",
           }}
         />
       </head>

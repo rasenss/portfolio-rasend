@@ -11,7 +11,8 @@ import { cn } from "@/lib/cn";
  *
  * It's in the page from the very first paint (a tiny script in the layout decides whether
  * to show it, so it never flashes), and the page's opening animations wait behind it, then
- * play as you enter. Visitors who chose "quietly" before don't see it again.
+ * play as you enter. It appears on every new visit; where the browser already allows sound
+ * (for example the visitor allowed sound for this site), it's skipped and music just starts.
  */
 export function SoundGate() {
   const lenis = useLenis();
@@ -21,6 +22,12 @@ export function SoundGate() {
 
   useEffect(() => {
     if (!document.documentElement.classList.contains("gate")) {
+      setGone(true);
+      return;
+    }
+    // where the browser already allows sound, skip the screen and play straight away
+    if (soundtrack.tryAutoplay()) {
+      document.documentElement.classList.remove("gate");
       setGone(true);
       return;
     }
