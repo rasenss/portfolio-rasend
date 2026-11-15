@@ -28,7 +28,7 @@ const styles: Record<Variant, string> = {
 
 export function Button({ children, href, onClick, variant = "solid", icon, className, download, external, type = "button" }: Props) {
   const cls = cn(
-    "btn-sweep inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5 text-base font-semibold transition-[color,transform] duration-300 active:scale-[0.97]",
+    "btn-sweep inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5 text-[1rem] font-semibold transition-[color,transform] duration-300 active:scale-[0.97]",
     styles[variant],
     className,
   );

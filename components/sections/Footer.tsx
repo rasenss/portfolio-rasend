@@ -4,6 +4,7 @@ import { useLenis } from "lenis/react";
 import { useEffect, useRef, useState } from "react";
 import { latinQuotes, profile } from "@/content/profile";
 import { gsap } from "@/lib/gsap";
+import { copyText } from "@/lib/copy";
 
 const CHARS = "ABCDEFGHIKLMNOPQRSTVXYZ";
 const DWELL = 5200; // ms each saying stays on screen
@@ -141,12 +142,8 @@ function ShareButton() {
         if ((e as DOMException).name === "AbortError") return; // closed the share sheet
       }
     }
-    try {
-      await navigator.clipboard.writeText(url);
-      flash("Link copied");
-    } catch {
-      flash(url.replace(/^https?:\/\//, ""));
-    }
+    if (await copyText(url)) flash("Link copied");
+    else flash(url.replace(/^https?:\/\//, ""));
   };
   return (
     <button

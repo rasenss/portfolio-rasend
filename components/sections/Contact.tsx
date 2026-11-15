@@ -3,32 +3,63 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { profile } from "@/content/profile";
-import { Button } from "@/components/ui/Button";
+import { copyText } from "@/lib/copy";
 import { SectionHeading } from "@/components/ui/Pill";
 
 /**
  * Contact, styled after the response editor in an evaluation tool.
- * The form opens the visitor's email app with the message filled in.
+ * The message is handed to the visitor's own email: Gmail in a new tab (works without any
+ * mail app set up), their email app, or copied to paste anywhere. Plain links are used
+ * rather than script redirects, because browsers and in-app browsers treat links reliably.
  */
 export function Contact() {
   const [copied, setCopied] = useState(false);
   const [form, setForm] = useState({ name: "", message: "" });
+  const [note, setNote] = useState<string | null>(null);
+
+  const subject = `Hello from ${form.name.trim() || "your portfolio"}`;
+  const body = form.message.trim() + (form.name.trim() ? `\n\n${form.name.trim()}` : "");
+  const gmail = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(profile.email)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  const mailto = `mailto:${profile.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  const empty = form.message.trim().length === 0;
+
+  const flash = (text: string) => {
+    setNote(text);
+    setTimeout(() => setNote(null), 3500);
+  };
+
+  // stop an empty message going out, with a friendly hint instead
+  const guard = (e: React.MouseEvent) => {
+    if (!empty) return;
+    e.preventDefault();
+    flash("Write a message first.");
+    document.getElementById("c-msg")?.focus();
+  };
+
+  const copyMessage = async () => {
+    if (empty) return flash("Write a message first.");
+    const ok = await copyText(`To: ${profile.email}\nSubject: ${subject}\n\n${body}`);
+    flash(ok ? `Copied. Paste it into any email to ${profile.email}.` : `Couldn't copy here. Please email ${profile.email} directly.`);
+  };
 
   const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(profile.email);
+    if (await copyText(profile.email)) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
+    } else {
       window.location.href = `mailto:${profile.email}`;
     }
   };
 
+  // pressing Enter in the name field sends with Gmail, like the main button
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    const subject = encodeURIComponent(`Hello from ${form.name || "your portfolio"}`);
-    const body = encodeURIComponent(form.message);
-    window.location.href = `mailto:${profile.email}?subject=${subject}&body=${body}`;
+    if (empty) {
+      flash("Write a message first.");
+      document.getElementById("c-msg")?.focus();
+      return;
+    }
+    window.open(gmail, "_blank", "noopener");
   };
 
   const field = "w-full rounded-[18px] border-2 border-line bg-surface px-5 py-4 text-lg outline-none transition-colors placeholder:text-fg-soft/70 focus:border-fg";
@@ -38,7 +69,7 @@ export function Contact() {
       <div className="scene mx-auto grid max-w-6xl gap-14 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-20">
         <div>
           <SectionHeading title="Get in touch">
-            Hiring for annotation or evaluation work, or need a front-end built? Send me a message and I&apos;ll reply by email.
+            Hiring for annotation or evaluation work, or need UI/UX design? Send me a message and I&apos;ll reply by email.
           </SectionHeading>
 
           <div className="mt-10 flex flex-col gap-3">
@@ -99,9 +130,30 @@ export function Contact() {
                   </motion.span>
                 )}
               </AnimatePresence>
-              <Button type="submit" className="ml-auto">
-                Open in email app
-              </Button>
+              <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+                <a
+                  href={mailto}
+                  onClick={guard}
+                  className="inline-flex items-center justify-center rounded-full border-2 border-line px-5 py-3 text-[1rem] font-semibold text-fg transition-colors hover:border-fg"
+                >
+                  Email app
+                </a>
+                <a
+                  href={gmail}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={guard}
+                  className="btn-sweep inline-flex items-center justify-center rounded-full bg-fg px-6 py-3.5 text-[1rem] font-semibold text-on transition-[color,transform] duration-300 active:scale-[0.97]"
+                >
+                  Send with Gmail
+                </a>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-[14px] text-fg-soft" aria-live="polite">
+              <span className={note ? "font-semibold text-role" : undefined}>{note ?? "No Gmail? Use your email app, or copy the message."}</span>
+              <button type="button" onClick={copyMessage} className="font-semibold text-fg underline decoration-line decoration-2 underline-offset-4 hover:decoration-fg">
+                Copy message
+              </button>
             </div>
           </div>
         </form>
