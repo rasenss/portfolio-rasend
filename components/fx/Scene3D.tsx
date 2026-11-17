@@ -14,9 +14,10 @@ export function Scene3D() {
   useEffect(() => {
     const canvas = ref.current;
     if (!canvas) return;
-    // older, low-memory devices get near-solid glass (no blur) so scrolling stays smooth
+    // truly old or low-memory devices get near-solid glass (no blur) so scrolling stays smooth
+    // (same rule as lowEnd() in lib/scene3d; iPhones don't report memory and get full glass)
     const nav = navigator as Navigator & { deviceMemory?: number };
-    if ((nav.hardwareConcurrency ?? 8) <= 4 || (nav.deviceMemory ?? 8) <= 4) document.documentElement.classList.add("glass-lite");
+    if ((nav.deviceMemory !== undefined && nav.deviceMemory <= 2) || (nav.hardwareConcurrency ?? 8) <= 2) document.documentElement.classList.add("glass-lite");
     let handle: { stop: () => void } | null = null;
     let cancelled = false;
 

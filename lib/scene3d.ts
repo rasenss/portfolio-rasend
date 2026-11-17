@@ -162,9 +162,11 @@ function compile(gl: WebGLRenderingContext, vs: string, fs: string) {
 
 export type SceneHandle = { stop: () => void };
 
+// Truly old or low-memory devices only. (deviceMemory is reported by Chrome-based browsers;
+// Safari, so every iPhone, leaves it out, and iPhones are fast enough for the full scene.)
 const lowEnd = () => {
   const nav = navigator as Navigator & { deviceMemory?: number };
-  return (nav.hardwareConcurrency ?? 8) <= 4 || (nav.deviceMemory ?? 8) <= 4;
+  return (nav.deviceMemory !== undefined && nav.deviceMemory <= 2) || (nav.hardwareConcurrency ?? 8) <= 2;
 };
 
 export function start(canvas: HTMLCanvasElement, onFirstFrame: () => void): SceneHandle | null {
@@ -301,11 +303,11 @@ export function start(canvas: HTMLCanvasElement, onFirstFrame: () => void): Scen
   g.clearColor(BASE[0], BASE[1], BASE[2], 1);
 
   // ---------- sizing ----------
-  // Draw at the screen's own pixel density (up to 2x, the point where extra pixels stop being
-  // visible), so stars are as sharp as the text. If frames start taking too long, the
-  // resolution steps down a little at a time, and steps back up once there is room again.
-  // never more than about 4K worth of pixels (3840 x 2160), even on 5K and 6K displays
-  const maxDpr = Math.min(window.devicePixelRatio || 1, weak ? 1.5 : 2, Math.sqrt(8.3e6 / Math.max(1, window.innerWidth * window.innerHeight)));
+  // Draw at the screen's own pixel density (phones are 3x, laptops 2x), so stars are as sharp
+  // as the text, but never more than about 4K worth of pixels (3840 x 2160), even on 5K and
+  // 6K displays. If frames start coming late, the resolution steps down a little at a time,
+  // and steps back up once there is room again.
+  const maxDpr = Math.min(window.devicePixelRatio || 1, weak ? 1.5 : 3, Math.sqrt(8.3e6 / Math.max(1, window.innerWidth * window.innerHeight)));
   const minDpr = Math.max(0.75, maxDpr * 0.5);
   let dpr = maxDpr;
   let w = 0, h = 0;
@@ -446,7 +448,9 @@ export function start(canvas: HTMLCanvasElement, onFirstFrame: () => void): Scen
   let last = 0;
   let lost = false;
   // frame-time samples, judged once a second
-  let sum = 0;
+  let sumDt = 0;
+  let sumPlan = 0;
+  let fastest = Infinity;
   let count = 0;
   let windowStart = 0;
   let good = 0;
@@ -475,11 +479,17 @@ export function start(canvas: HTMLCanvasElement, onFirstFrame: () => void): Scen
     // Ignore the first 2 s (the page is still loading) and long gaps (the browser paused us,
     // e.g. a background tab), then judge the average frame time once a second.
     if (settled++ > 120 && dt < 250) {
-      sum += Math.max(0, dt - Math.max(gap, 16.67)); // how late each frame came, compared with the plan
+      sumDt += dt;
+      sumPlan += Math.max(gap, 16.67);
+      fastest = Math.min(fastest, dt);
       count++;
       if (!windowStart) windowStart = now;
       if (now - windowStart > 1000 && count > 10) {
-        const late = sum / count;
+        // How late frames came compared with the plan. The fastest frame in the window shows
+        // what the screen allows: Low Power Mode, in-app browsers and some phones cap pages at
+        // 30 frames a second, and a steady cap like that is not the device struggling, so it
+        // must not lower the resolution (that made the stars blocky on phones).
+        const late = sumDt / count - Math.max(sumPlan / count, fastest);
         if (late > 9 && dpr > minDpr) {
           dpr = Math.max(minDpr, dpr * 0.85);
           w = 0;
@@ -489,7 +499,9 @@ export function start(canvas: HTMLCanvasElement, onFirstFrame: () => void): Scen
           w = 0;
           good = 0;
         }
-        sum = 0;
+        sumDt = 0;
+        sumPlan = 0;
+        fastest = Infinity;
         count = 0;
         windowStart = now;
       }

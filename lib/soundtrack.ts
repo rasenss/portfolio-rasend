@@ -6,8 +6,9 @@
  *   has interacted with the page, so in most browsers the first touch anywhere on the page
  *   (a tap, a click, or a key press) switches it on. Where the browser already allows sound,
  *   it starts on arrival. It fades in softly and loops for as long as they stay.
- * - Switching to another tab, another site or another app fades it out and pauses it; coming
- *   back fades it in again where it left off.
+ * - Switching to another tab, another site or another app pauses it straight away; clicking
+ *   into another window (with the site still visible) fades it out. Coming back fades it in
+ *   again where it left off.
  * - The music button in the top bar turns it off for the rest of the visit. Every new visit
  *   starts with music on again.
  * - The button only shows "on" while music is actually playing.
@@ -92,10 +93,22 @@ class Soundtrack {
     this.audio = audio;
     this.setupMediaSession();
 
-    // another tab, site or app: fade out; back on the site: fade back in
-    document.addEventListener("visibilitychange", () => (document.hidden ? this.goAway() : this.comeBack()));
-    window.addEventListener("pagehide", () => this.goAway());
+    // Another tab, site or app: pause at once. (A fade can't be used here: browsers slow timers
+    // in background tabs to about once a second, so a fade would keep playing for half a minute.)
+    document.addEventListener("visibilitychange", () => (document.hidden ? this.goAway(true) : this.comeBack()));
+    window.addEventListener("pagehide", () => this.goAway(true));
     window.addEventListener("pageshow", () => {
+      if (!document.hidden) this.comeBack();
+    });
+    // Another window or app in front while the site is still visible: fade out. Clicking into a
+    // frame inside the site (the PDF viewer) also moves focus away, but that's still the site.
+    window.addEventListener("blur", () => {
+      window.setTimeout(() => {
+        if (document.activeElement instanceof HTMLIFrameElement) return;
+        if (!document.hasFocus()) this.goAway(false);
+      }, 0);
+    });
+    window.addEventListener("focus", () => {
       if (!document.hidden) this.comeBack();
     });
 
@@ -182,6 +195,9 @@ class Soundtrack {
         stop();
         return;
       }
+      // a touch on the page proves the visitor is here, whatever focus events the browser sent
+      // (some phones and in-app browsers never report the page as focused again)
+      this.away = false;
       // play() must be called right here, inside the visitor's action
       void this.play().then((ok) => {
         if (ok) stop();
@@ -194,10 +210,26 @@ class Soundtrack {
     events.forEach((t) => window.addEventListener(t, onGesture, true));
   }
 
-  private goAway() {
+  /** Leave: `now` pauses straight away (page hidden), otherwise it fades out */
+  private goAway(now: boolean) {
+    const audio = this.audio;
+    if (now && audio) {
+      // also cuts short a fade that started when the window lost focus a moment earlier
+      if (this.fadeTimer) clearInterval(this.fadeTimer);
+      this.fadeTimer = null;
+      try {
+        audio.volume = 0;
+      } catch {
+        /* volume is fixed on this device */
+      }
+      if (!audio.paused) audio.pause();
+    }
     if (this.away) return;
     this.away = true;
-    if (this.audio && !this.audio.paused) this.pause();
+    if (!now && audio && !audio.paused) this.pause();
+    // the first touch, click or key press after coming back starts it again, even where the
+    // browser doesn't report the page as focused or visible again
+    if (this.wanted) this.armGesture();
   }
 
   private comeBack() {

@@ -61,7 +61,8 @@ export function AnnotationBox({ children, type = "person", animate = false, glas
   const mode = animate === true ? "load" : animate || null;
   const root = useRef<HTMLSpanElement>(null);
   const natural = useRef<HTMLSpanElement>(null); // the box at its natural (fitted) size
-  const start = useRef({ x: 0, y: 0, e: ZERO });
+  const start = useRef({ x: 0, y: 0, e: ZERO, k: 1 });
+  const pointer = useRef<number | null>(null); // the one pointer doing the stretching
   const [edge, setEdge] = useState<Edges>(ZERO);
   const [size, setSize] = useState({ w: 1, h: 1 }); // fitted size, measured when a drag starts
   const [drag, setDrag] = useState<Corner | null>(null);
@@ -86,21 +87,32 @@ export function AnnotationBox({ children, type = "person", animate = false, glas
   const spring = springing && "transition-[left,top,right,bottom] duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)]";
 
   const down = (c: Corner) => (e: React.PointerEvent<HTMLSpanElement>) => {
-    if (!natural.current || e.button > 0) return;
+    const el = natural.current;
+    // one stretch at a time (a second finger on another handle is ignored)
+    if (!el || e.button > 0 || pointer.current !== null) return;
     e.preventDefault();
     e.stopPropagation();
-    e.currentTarget.setPointerCapture(e.pointerId);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      /* capture unavailable: moves still arrive while the pointer is over the handle */
+    }
+    pointer.current = e.pointerId;
     setSpringing(false);
-    const r = natural.current.getBoundingClientRect();
-    setSize({ w: r.width, h: r.height });
-    start.current = { x: e.clientX, y: e.clientY, e: edge };
+    // Sizes in the page's own pixels. A section can be mid-zoom (scaled) while you grab it, so
+    // pointer movement on screen is converted back by that scale, and the box follows the finger.
+    const w = el.offsetWidth || 1;
+    const h = el.offsetHeight || 1;
+    const k = el.getBoundingClientRect().width / w || 1;
+    setSize({ w, h });
+    start.current = { x: e.clientX, y: e.clientY, e: edge, k };
     setDrag(c);
   };
   const move = (e: React.PointerEvent<HTMLSpanElement>) => {
-    if (!drag) return;
+    if (!drag || e.pointerId !== pointer.current) return;
     const s = start.current;
-    const dx = e.clientX - s.x;
-    const dy = e.clientY - s.y;
+    const dx = (e.clientX - s.x) / s.k;
+    const dy = (e.clientY - s.y) / s.k;
     // each edge only moves outwards from the fitted box, up to MAX
     const clamp = (v: number) => Math.min(MAX, Math.max(0, v));
     let { l, t, r, b } = s.e;
@@ -110,9 +122,15 @@ export function AnnotationBox({ children, type = "person", animate = false, glas
     else b = clamp(s.e.b + dy);
     setEdge({ l, t, r, b });
   };
+  // let go, lift the finger, or lose the pointer (window switch, system gesture): always ends cleanly
   const up = (e: React.PointerEvent<HTMLSpanElement>) => {
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
-    if (!drag) return;
+    if (e.pointerId !== pointer.current) return;
+    pointer.current = null;
+    try {
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      /* already released */
+    }
     setDrag(null);
     // let go: everything springs back to fit
     setSpringing(true);
@@ -195,6 +213,7 @@ export function AnnotationBox({ children, type = "person", animate = false, glas
               onPointerMove={resizable ? move : undefined}
               onPointerUp={resizable ? up : undefined}
               onPointerCancel={resizable ? up : undefined}
+              onLostPointerCapture={resizable ? up : undefined}
               // don't let a drag count as a click on what's inside (the hero name replays its detection)
               onClick={resizable ? (e) => e.stopPropagation() : undefined}
               title={resizable ? "Drag to stretch the box" : undefined}
