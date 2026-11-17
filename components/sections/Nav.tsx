@@ -1,7 +1,8 @@
 "use client";
 
 import { useLenis } from "lenis/react";
-import { AnimatePresence, MotionConfig, motion, useMotionValueEvent, useScroll } from "motion/react";
+import { AnimatePresence, MotionConfig, motion, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from "motion/react";
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { navLinks, profile } from "@/content/profile";
 import { cn } from "@/lib/cn";
@@ -66,6 +67,43 @@ function ProgressRing({ index }: { index: number }) {
       <span className="relative text-[13px] font-bold tabular-nums">{String(index).padStart(2, "0")}</span>
     </span>
   );
+}
+
+/**
+ * The round RSN badge at the start of the bar. It rolls in with the bar, turns like a wheel as
+ * you scroll down the page, and spins once more when you point at it.
+ */
+function BrandMark() {
+  const { scrollYProgress } = useScroll();
+  const reduce = useReducedMotion();
+  const rotate = useTransform(scrollYProgress, [0, 1], [0, reduce ? 0 : 540]);
+  return (
+    <motion.span style={{ rotate }} className="relative block h-10 w-10 shrink-0 rounded-full ring-1 ring-fg/20">
+      <Image src="/brand/rsn-mark.png" alt="" width={40} height={40} unoptimized loading="eager" className="rsn-mark h-full w-full rounded-full" />
+    </motion.span>
+  );
+}
+
+/** A link label whose letters roll up one after another on hover, revealing a fresh copy underneath */
+function RollText({ text }: { text: string }) {
+  return (
+    <span className="roll">
+      <span className="sr-only">{text}</span>
+      <span aria-hidden className="flex">
+        {[...text].map((c, i) => (
+          <span key={i} className="roll-ch" style={{ "--i": i } as React.CSSProperties}>
+            {c}
+          </span>
+        ))}
+      </span>
+    </span>
+  );
+}
+
+/** A thin amber line along the bottom of the bar that fills as you read down the page */
+function ReadLine() {
+  const { scrollYProgress } = useScroll();
+  return <motion.span aria-hidden style={{ scaleX: scrollYProgress }} className="absolute inset-x-7 bottom-0 h-[2px] origin-left rounded-full bg-role" />;
 }
 
 /** The current section's name; it decodes into place whenever the section changes */
@@ -152,6 +190,14 @@ export function Nav() {
     };
   }, []);
 
+  // the phone menu only exists below tablet width; widening the window closes it
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 48rem)");
+    const close = () => mq.matches && setOpen(false);
+    mq.addEventListener("change", close);
+    return () => mq.removeEventListener("change", close);
+  }, []);
+
   useEffect(() => {
     if (!lenis) return;
     if (open) lenis.stop();
@@ -207,6 +253,7 @@ export function Nav() {
           {/* each time you enter a new section, a thin amber scan line passes across the glass */}
           <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-full">
             <span key={active ?? "top"} className="nav-scan absolute inset-y-0 left-0 w-[2px] bg-role" />
+            {!compact && <ReadLine />}
           </span>
 
           <AnimatePresence mode="popLayout" initial={false}>
@@ -242,7 +289,7 @@ export function Nav() {
                 animate={{ opacity: 1, filter: "blur(0px)" }}
                 exit={{ opacity: 0, filter: "blur(4px)", transition: { duration: 0.12 } }}
                 transition={{ duration: 0.25 }}
-                className="flex w-full items-center justify-between gap-2 py-1.5 pl-5 pr-1.5"
+                className="flex w-full items-center justify-between gap-2 py-1.5 pl-1.5 pr-1.5"
               >
                 <a
                   ref={brand}
@@ -254,19 +301,25 @@ export function Nav() {
                     e.preventDefault();
                     lenis.scrollTo(0, { duration: 1.2 });
                   }}
-                  className="grid font-condensed text-lg font-black uppercase tracking-wide"
+                  aria-label={profile.firstName}
+                  className="nav-brand flex shrink-0 items-center gap-3 rounded-full pr-1"
                 >
-                  {/* the real name holds the width, so the bar never shifts while letters decode */}
-                  <span aria-hidden className="invisible col-start-1 row-start-1">
-                    {profile.firstName}
-                  </span>
-                  <span ref={brandText} className="col-start-1 row-start-1 w-0 min-w-full overflow-hidden whitespace-nowrap">
-                    {profile.firstName}
+                  <BrandMark />
+                  {/* the name sits beside the badge. On small phones it stacks on two lines so it always fits;
+                      on narrow tablets the links need the room, so only the badge shows */}
+                  <span className="grid max-w-[6.2em] font-condensed text-[15px] font-black uppercase leading-[1.05] tracking-wide max-[279px]:hidden min-[380px]:max-w-none min-[380px]:text-lg min-[380px]:leading-normal md:max-[859px]:hidden">
+                    {/* the real name holds the size, so the bar never shifts while letters decode */}
+                    <span aria-hidden className="invisible col-start-1 row-start-1 min-[380px]:whitespace-nowrap">
+                      {profile.firstName}
+                    </span>
+                    <span ref={brandText} className="col-start-1 row-start-1 max-h-[2.1em] w-0 min-w-full overflow-hidden min-[380px]:max-h-none min-[380px]:whitespace-nowrap">
+                      {profile.firstName}
+                    </span>
                   </span>
                 </a>
 
                 {/* a small gap between links keeps the hover box and its handles clear of the neighbouring pill */}
-                <ul className="hidden items-center gap-1.5 lg:flex" onPointerLeave={() => setHover(null)}>
+                <ul className="hidden items-center gap-1 md:flex lg:gap-1.5" onPointerLeave={() => setHover(null)}>
                   {navLinks.map((l) => (
                     <li key={l.id}>
                       <a
@@ -275,7 +328,7 @@ export function Nav() {
                         onPointerEnter={() => setHover(l.id)}
                         onFocus={() => setHover(l.id)}
                         onBlur={() => setHover(null)}
-                        className="relative block rounded-full px-3.5 py-2 text-[15px] font-medium transition-transform duration-150 active:scale-95"
+                        className="nav-link relative block rounded-full px-2.5 py-2 text-[15px] font-medium transition-transform duration-150 active:scale-95 lg:px-3.5"
                       >
                         {active === l.id && (
                           <motion.span layoutId="nav-mark" className="absolute inset-0 rounded-full bg-role" transition={spring} />
@@ -283,7 +336,9 @@ export function Nav() {
                         <AnimatePresence>{hover === l.id && active !== l.id && <HoverBox key="box" />}</AnimatePresence>
                         {/* the label is laid out once invisibly (sets the size), then shown on top so it can lean toward the cursor */}
                         <span aria-hidden className="invisible">{l.label}</span>
-                        <MagneticLabel className={cn("transition-colors", active === l.id && "text-on")}>{l.label}</MagneticLabel>
+                        <MagneticLabel className={cn("transition-colors", active === l.id && "text-on")}>
+                          <RollText text={l.label} />
+                        </MagneticLabel>
                       </a>
                     </li>
                   ))}
@@ -296,7 +351,7 @@ export function Nav() {
                   </a>
                   <button
                     onClick={() => setOpen((o) => !o)}
-                    className="relative flex h-10 w-10 items-center justify-center rounded-full bg-fg/5 lg:hidden"
+                    className="relative flex h-10 w-10 items-center justify-center rounded-full bg-fg/5 md:hidden"
                     aria-label={open ? "Close menu" : "Open menu"}
                     aria-expanded={open}
                   >
@@ -319,7 +374,7 @@ export function Nav() {
             initial={false}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, transition: { duration: 0.2 } }}
-            className="fixed inset-0 z-40 flex flex-col justify-center gap-1 bg-base/97 px-8 backdrop-blur-md lg:hidden"
+            className="fixed inset-0 z-40 flex flex-col justify-center gap-1 bg-base/97 px-6 backdrop-blur-md min-[400px]:px-8 md:hidden"
             data-lenis-prevent
           >
             {navLinks.map((l, i) => (
@@ -330,12 +385,14 @@ export function Nav() {
                 initial={{ y: 24, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.05 + i * 0.05, type: "spring", stiffness: 260, damping: 24 }}
-                className={cn("font-condensed w-max rounded-2xl px-2 text-6xl font-black uppercase", active === l.id && "bg-role text-on")}
+                // sized to the screen so the longest word ("Certificates") always fits on one line
+                style={{ fontSize: "clamp(2rem, calc((100vw - 4.5rem) / 6.4), 3.75rem)" }}
+                className={cn("font-condensed w-max max-w-full whitespace-nowrap rounded-2xl px-2 font-black uppercase leading-none", active === l.id && "bg-role text-on")}
               >
                 {l.label}
               </motion.a>
             ))}
-            <a href="#contact" onClick={emailMe} className="mt-8 px-2 text-lg font-medium text-fg-soft underline underline-offset-4">
+            <a href="#contact" onClick={emailMe} className="mt-8 break-all px-2 text-lg font-medium text-fg-soft underline underline-offset-4">
               {profile.email}
             </a>
           </motion.div>
