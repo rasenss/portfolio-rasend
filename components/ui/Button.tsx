@@ -11,7 +11,8 @@ type Props = {
   variant?: Variant;
   icon?: React.ReactNode;
   className?: string;
-  download?: boolean;
+  /** true, or the file name the download is saved as */
+  download?: boolean | string;
   external?: boolean;
   type?: "button" | "submit";
 };
@@ -40,7 +41,7 @@ export function Button({ children, href, onClick, variant = "solid", icon, class
   );
   if (href) {
     return (
-      <a href={href} onClick={onClick} className={cls} download={download || undefined} target={external ? "_blank" : undefined} rel={external ? "noreferrer" : undefined}>
+      <a href={href} onClick={onClick} className={cls} download={download === true ? "" : download || undefined} target={external ? "_blank" : undefined} rel={external ? "noreferrer" : undefined}>
         {content}
       </a>
     );

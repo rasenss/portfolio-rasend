@@ -172,7 +172,7 @@ export function Hero() {
             <Button href="#work" variant="solid">
               See my work
             </Button>
-            <Button href={profile.cv} variant="outline" download>
+            <Button href={profile.cv} variant="outline" download="Rasendriya_Khansa_Jolankarfyan-CV.pdf">
               Download CV
             </Button>
           </div>
