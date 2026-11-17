@@ -149,7 +149,7 @@ function ShareButton() {
     <button
       onClick={share}
       aria-live="polite"
-      className="btn-sweep flex w-max items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 font-medium text-fg transition-colors hover:text-on"
+      className="btn-sweep glass-chip flex w-max items-center gap-2 rounded-full border px-4 py-2 font-medium text-fg transition-colors hover:text-on"
     >
       {label}
     </button>
@@ -188,7 +188,7 @@ export function Footer() {
           <ShareButton />
           <button
             onClick={() => (lenis ? lenis.scrollTo(0, { duration: 1.4 }) : window.scrollTo({ top: 0, behavior: "smooth" }))}
-            className="btn-sweep flex w-max items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 font-medium text-fg transition-colors hover:text-on"
+            className="btn-sweep glass-chip flex w-max items-center gap-2 rounded-full border px-4 py-2 font-medium text-fg transition-colors hover:text-on"
           >
             Back to top
           </button>

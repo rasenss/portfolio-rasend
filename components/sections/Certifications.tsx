@@ -108,9 +108,9 @@ export function Certifications({ certifications }: { certifications: Certificati
           {fresh.size > 0 && <span className="font-semibold text-role"> {fresh.size} new since your last visit.</span>}
         </SectionHeading>
 
-        <ul className="mt-12 border-t border-line" onPointerMove={onMove} onPointerLeave={() => setHovered(null)}>
+        <ul className="glass-panel mt-12 rounded-[28px] px-5 md:px-8" onPointerMove={onMove} onPointerLeave={() => setHovered(null)}>
           {list.map((c) => (
-            <li key={c.id} className="zoom border-b border-line">
+            <li key={c.id} className="zoom border-b border-line last:border-b-0">
               <button
                 data-cert={c.id}
                 onClick={() => setOpen(c)}
@@ -135,7 +135,7 @@ export function Certifications({ certifications }: { certifications: Certificati
         {certifications.length > 8 && (
           <button
             onClick={() => setShowAll((s) => !s)}
-            className="mt-6 rounded-full border border-line bg-surface px-5 py-3 text-[15px] font-semibold hover:border-fg"
+            className="glass-chip mt-6 rounded-full border px-5 py-3 text-[15px] font-semibold hover:border-fg"
           >
             {showAll ? "Show fewer" : `Show all ${certifications.length}`}
           </button>

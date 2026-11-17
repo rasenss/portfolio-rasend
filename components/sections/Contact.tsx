@@ -73,7 +73,7 @@ export function Contact() {
           </SectionHeading>
 
           <div className="mt-10 flex flex-col gap-3">
-            <button onClick={copy} className="zoom flex w-full max-w-sm items-center justify-between gap-3 rounded-[18px] border border-line bg-surface px-5 py-4 text-left transition-colors hover:border-fg">
+            <button onClick={copy} className="zoom glass-panel flex w-full max-w-sm items-center justify-between gap-3 rounded-[18px] px-5 py-4 text-left transition-colors hover:border-fg">
               <span className="truncate text-lg font-semibold">{profile.email}</span>
               <span className="flex shrink-0 items-center gap-1.5 text-[15px] font-medium text-fg-soft">
                 {copied ? "Copied" : "Copy email"}
@@ -92,7 +92,7 @@ export function Contact() {
                   href={l.href}
                   target="_blank"
                   rel="noreferrer"
-                  className="zoom flex w-full max-w-sm items-center justify-between gap-3 rounded-[18px] border border-line bg-surface px-5 py-4 transition-colors hover:border-fg"
+                  className="zoom glass-panel flex w-full max-w-sm items-center justify-between gap-3 rounded-[18px] px-5 py-4 transition-colors hover:border-fg"
                 >
                   <span className="text-lg font-semibold">{l.label}</span>
                   <span className="truncate text-[15px] font-medium text-fg-soft">{l.handle}</span>

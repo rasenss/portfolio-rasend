@@ -57,7 +57,7 @@ export async function Experience() {
               {/* the roles */}
               <div className="space-y-16 lg:space-y-20 lg:pt-4">
                 {g.items.map((item) => (
-                  <article key={item.id} className="zoom-in">
+                  <article key={item.id} className="zoom-in glass-panel rounded-[28px] p-6 md:p-8">
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[15px]">
                       <span className="font-bold text-role">{item.period}</span>
                       <span className="text-fg-soft">{item.type}</span>

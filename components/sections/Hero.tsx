@@ -91,26 +91,30 @@ function ProximityName({ text, start = 0, className }: { text: string; start?: n
 let counter = 0;
 const indexed = intro.map((para) => para.map((seg) => ({ seg, i: typeof seg === "string" ? -1 : counter++ })));
 
-function renderSegment(seg: Segment, i: number, key: number) {
+function renderSegment(seg: Segment, i: number, key: number, point: (type: Label | null) => void) {
   if (typeof seg === "string") return <span key={key}>{seg}</span>;
+  const cut = seg.text.lastIndexOf(" ") + 1;
+  const head = seg.text.slice(0, cut);
+  const last = seg.text.slice(cut);
   return (
     <span
       key={key}
       data-type={seg.type}
       className="ent ent-animate"
       style={{ "--c": labels[seg.type].color, "--i": i } as React.CSSProperties}
+      // pointing at a span picks out every span with the same label
+      onPointerEnter={(e) => e.pointerType === "mouse" && point(seg.type)}
+      onPointerLeave={(e) => e.pointerType === "mouse" && point(null)}
     >
-      {seg.text}
-      <span className="ent-tag">{seg.type}</span>
+      {head}
+      {/* the last word and the label chip stay together, so a chip never wraps onto a line by itself */}
+      <span className="whitespace-nowrap">
+        {last}
+        <span className="ent-tag">{seg.type}</span>
+      </span>
     </span>
   );
 }
-
-const counts = intro.flat().reduce<Record<string, number>>((acc, s) => {
-  if (typeof s !== "string") acc[s.type] = (acc[s.type] ?? 0) + 1;
-  return acc;
-}, {});
-const legend = (Object.keys(labels) as Label[]).filter((k) => counts[k]);
 
 export function Hero() {
   const [focus, setFocus] = useState<Label | null>(null);
@@ -121,50 +125,22 @@ export function Hero() {
       <div className="mx-auto max-w-6xl">
         {/* Surprise: clicking the name remounts the box, which replays the whole detection sequence */}
         <h1
-          className="zoom-out text-[clamp(2rem,12.4vw,9.6rem)] uppercase leading-[0.84] tracking-[-0.005em]"
+          className="hero-name text-[clamp(2rem,12.4vw,9.6rem)] uppercase leading-[0.84] tracking-[-0.005em]"
           onClick={() => setRun((n) => n + 1)}
           title="Click to run detection again"
         >
           <span className="sr-only">{profile.name}</span>
-          <AnnotationBox key={run} label="person" type="person" confidence={0.99} animate>
+          <AnnotationBox key={run} type="person" animate="load" glass resizable="scale" pieceClass="hero-fly">
             <ProximityName text={profile.firstName} />
             <ProximityName text={profile.lastName} start={profile.firstName.replace(/\s/g, "").length} className="text-role" />
           </AnnotationBox>
         </h1>
 
-        <div className="mt-20 grid gap-12 lg:grid-cols-[minmax(0,1fr)_260px] lg:gap-16" data-focus={focus ?? undefined}>
-          <div className="max-w-[46rem] space-y-6 text-[clamp(1.3rem,2.2vw,1.8rem)] font-medium leading-[1.6]">
-            {indexed.map((para, p) => (
-              <p key={p} className="zoom-out">{para.map(({ seg, i }, k) => renderSegment(seg, i, k))}</p>
-            ))}
-          </div>
-
-          {/* Label legend, like the class list in an annotation tool */}
-          <aside className="intro-fade self-start" style={{ "--d": "2.4s" } as React.CSSProperties}>
-            <div className="zoom-out glass rounded-[24px] p-5">
-              <p className="text-sm font-semibold text-fg-soft">Labels in this paragraph</p>
-              <ul className="mt-3 space-y-1">
-                {legend.map((k) => (
-                  <li key={k}>
-                    <button
-                      onPointerEnter={() => setFocus(k)}
-                      onPointerLeave={() => setFocus(null)}
-                      onFocus={() => setFocus(k)}
-                      onBlur={() => setFocus(null)}
-                      className={cn("flex w-full items-center justify-between rounded-xl px-2 py-1.5 text-left text-[15px] font-medium transition-colors", focus === k && "bg-fg/5")}
-                    >
-                      <span className="flex items-center gap-2.5">
-                        <span className="h-4 w-4 rounded-[5px]" style={{ backgroundColor: labels[k].color }} />
-                        {labels[k].name}
-                      </span>
-                      <span className="tabular-nums text-fg-soft">{counts[k]}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-3 text-[13px] leading-snug text-fg-soft">Hover a label to see where it appears.</p>
-            </div>
-          </aside>
+        {/* pointing at a highlighted phrase picks out every phrase with the same label */}
+        <div className="mt-20 max-w-[46rem] space-y-6 text-[clamp(1.3rem,2.2vw,1.8rem)] font-medium leading-[1.6]" data-focus={focus ?? undefined}>
+          {indexed.map((para, p) => (
+            <p key={p} className="zoom-out glass-panel rounded-[24px] px-5 py-4 md:px-7 md:py-6">{para.map(({ seg, i }, k) => renderSegment(seg, i, k, setFocus))}</p>
+          ))}
         </div>
 
         <div className="zoom-out mt-14">

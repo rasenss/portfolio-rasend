@@ -35,7 +35,7 @@ function Tile({ project, index, color, isNew, onOpen }: { project: Project; inde
   const isLogo = isMark(project.kind);
   return (
     <button onClick={onOpen} className="zoom group mb-5 block w-full break-inside-avoid text-left" data-i={index}>
-      <span className="relative block rounded-[24px] border border-line bg-surface p-2 transition-colors group-hover:border-fg group-focus-visible:border-fg">
+      <span className="glass-panel relative block rounded-[24px] p-2 transition-colors group-hover:border-fg group-focus-visible:border-fg">
         <span className={cn("relative block overflow-clip rounded-[18px]", isLogo && "bg-white")} style={{ aspectRatio: project.ratio }}>
           {/* hover zoom lives on a wrapper: the scroll push-in animation owns the image's own transform */}
           <span className="absolute inset-0 block transition-transform duration-500 ease-[var(--ease-out-expo)] group-hover:scale-[1.03]">
@@ -91,7 +91,7 @@ export function Work({ projects }: { projects: Project[] }) {
               key={k}
               aria-pressed={kind === k}
               onClick={() => setKind(k)}
-              className={cn("relative rounded-full border px-4 py-2 text-[15px] font-medium transition-colors", kind === k ? "border-fg text-surface" : "border-line bg-surface hover:border-fg")}
+              className={cn("relative rounded-full border px-4 py-2 text-[15px] font-medium transition-colors", kind === k ? "border-fg text-surface" : "glass-chip hover:border-fg")}
             >
               {kind === k && <motion.span layoutId="work-filter" className="absolute inset-0 rounded-full bg-fg" transition={{ type: "spring", stiffness: 420, damping: 32 }} />}
               <span className="relative">{k}</span>

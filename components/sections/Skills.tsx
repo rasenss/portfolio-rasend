@@ -89,7 +89,7 @@ export function Skills() {
 
         {/* proof caption, pinned to the bottom of the screen while the poster is in view */}
         <div className="sticky bottom-4 z-20 mt-16">
-          <div className="rounded-[22px] border border-line bg-surface p-4 shadow-[0_-18px_40px_-12px_rgb(0_0_0/0.55)] md:rounded-[24px] md:p-6" aria-live="polite">
+          <div className="glass-panel rounded-[22px] p-4 shadow-[0_-18px_40px_-12px_rgb(0_0_0/0.55)] md:rounded-[24px] md:p-6" aria-live="polite">
             {/* new proof replaces the old one at once and fades in, so the caption is never empty */}
             <motion.div
                 key={current.name}

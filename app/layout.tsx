@@ -3,6 +3,7 @@ import { Archivo } from "next/font/google";
 import "./globals.css";
 import { SmoothScroll } from "@/components/providers/SmoothScroll";
 import { Delight } from "@/components/fx/Delight";
+import { Scene3D } from "@/components/fx/Scene3D";
 import Script from "next/script";
 import { ON_VERCEL, SITE_URL } from "@/lib/site";
 
@@ -35,7 +36,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={archivo.variable}>
-      <body className="bg-base font-sans text-fg antialiased">
+      {/* the page colour lives on <html>; the body stays clear so the 3D background behind it shows */}
+      <body className="font-sans text-fg antialiased">
+        {/* 3D point-cloud terrain behind the whole site */}
+        <Scene3D />
         <div aria-hidden className="scroll-progress fixed inset-x-0 top-0 z-[70] h-[3px] origin-left bg-role" />
         <a href="#about" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[200] focus:rounded-full focus:bg-role focus:px-4 focus:py-2 focus:text-on">
           Skip to content

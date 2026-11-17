@@ -24,15 +24,18 @@ function LocalTime() {
 
 function Portrait() {
   return (
-    <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[22px]">
-      {profile.portrait ? (
-        <Image src={profile.portrait} alt={profile.name} fill sizes="(max-width: 768px) 100vw, 380px" className="object-cover" />
-      ) : (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-person">
-          <span className="font-condensed text-[7rem] font-black leading-none text-on">{profile.initials}</span>
-          <span className="rounded-full bg-surface px-3 py-1 text-xs font-medium text-fg-soft">Add a photo at public/rasendriya.webp</span>
-        </div>
-      )}
+    <div className="relative aspect-[4/5] w-full">
+      {/* the picture layer grows with its box when the box is stretched, re-cropping instead of distorting */}
+      <div className="bx-fill absolute overflow-hidden rounded-[22px]">
+        {profile.portrait ? (
+          <Image src={profile.portrait} alt={profile.name} fill sizes="(max-width: 768px) 100vw, 380px" className="object-cover" />
+        ) : (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-person">
+            <span className="font-condensed text-[7rem] font-black leading-none text-on">{profile.initials}</span>
+            <span className="glass-chip rounded-full border px-3 py-1 text-xs font-medium text-fg-soft">Add a photo at public/rasendriya.webp</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -42,14 +45,14 @@ export function About() {
     <section id="about" className="relative px-5 py-24 md:px-10 md:py-36">
       <div className="scene mx-auto grid max-w-6xl gap-16 lg:grid-cols-[380px_minmax(0,1fr)] lg:gap-20">
         <div className="zoom pt-12">
-          <AnnotationBox label="rasendriya" type="person" confidence={1} className="block w-full">
+          <AnnotationBox type="person" animate="view" resizable="fill" className="block w-full">
             <Portrait />
           </AnnotationBox>
         </div>
 
         <div>
           <SectionHeading title="About" />
-          <p className="zoom-in mt-8 max-w-[38rem] text-xl leading-[1.65] text-fg md:text-[1.35rem]">{profile.summary}</p>
+          <p className="zoom-in glass-panel mt-8 max-w-[40rem] rounded-[24px] px-5 py-5 text-xl leading-[1.65] text-fg md:px-7 md:py-6 md:text-[1.35rem]">{profile.summary}</p>
 
           <dl className="zoom mt-12 grid gap-x-10 gap-y-8 sm:grid-cols-2">
             <div>
@@ -69,7 +72,7 @@ export function About() {
               <dt className="text-sm font-semibold text-fg-soft">Extra training</dt>
               <dd className="mt-2.5 flex flex-wrap gap-2">
                 {education.training.map((t) => (
-                  <span key={t} className="rounded-full border border-line bg-surface px-3.5 py-1.5 text-[15px]">
+                  <span key={t} className="glass-chip rounded-full border px-3.5 py-1.5 text-[15px]">
                     {t}
                   </span>
                 ))}

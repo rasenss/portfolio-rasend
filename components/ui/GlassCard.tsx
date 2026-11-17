@@ -1,9 +1,9 @@
 import { cn } from "@/lib/cn";
 
-/** Flat panel: paper-white surface with a hairline border. Glass is reserved for floating layers. */
+/** Frosted glass panel: the universe behind shows through, softly blurred, with a light rim. */
 export function Panel({ className, children, ...rest }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn("rounded-[28px] border border-line bg-surface", className)} {...rest}>
+    <div className={cn("glass-panel rounded-[28px]", className)} {...rest}>
       {children}
     </div>
   );
