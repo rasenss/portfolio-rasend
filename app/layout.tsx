@@ -34,19 +34,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    // the class set by the script below is added before React loads, so React is told not to mind it
-    <html lang="en" className={archivo.variable} suppressHydrationWarning>
-      <head>
-        {/* Decides before the first paint whether to show the welcome screen, so it never flashes:
-            shown on every new visit, unless the visitor chose quiet earlier in this visit or the
-            browser already allows sound. */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html:
-              "try{var s=sessionStorage.getItem('rk-sound'),n=navigator,p=n.getAutoplayPolicy&&n.getAutoplayPolicy('audiocontext');if(s!=='off'&&p!=='allowed')document.documentElement.classList.add('gate')}catch(e){}",
-          }}
-        />
-      </head>
+    <html lang="en" className={archivo.variable}>
       <body className="bg-base font-sans text-fg antialiased">
         <div aria-hidden className="scroll-progress fixed inset-x-0 top-0 z-[70] h-[3px] origin-left bg-role" />
         <a href="#about" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[200] focus:rounded-full focus:bg-role focus:px-4 focus:py-2 focus:text-on">

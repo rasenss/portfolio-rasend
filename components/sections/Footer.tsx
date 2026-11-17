@@ -172,7 +172,17 @@ export function Footer() {
       </div>
 
       <div className="mx-auto mt-10 flex max-w-6xl flex-col gap-6 border-t border-line pt-8 text-[15px] text-fg-soft sm:flex-row sm:items-center sm:justify-between">
-        <p>© 2026 {profile.name}. Built in Pacitan with Next.js.</p>
+        <div className="space-y-1">
+          <p>© 2026 {profile.name}. Built in Pacitan with Next.js.</p>
+          {/* credit required by the music's free licence */}
+          <p>
+            Music: &ldquo;Enlivening&rdquo; by Pufino, from{" "}
+            <a href="https://freetouse.com/music" target="_blank" rel="noreferrer" className="underline decoration-line underline-offset-4 hover:text-fg">
+              Free To Use
+            </a>
+            .
+          </p>
+        </div>
         <p className="hidden md:block">Try typing “qa”, clicking my name, or Shift-dragging anywhere.</p>
         <div className="flex flex-wrap gap-2">
           <ShareButton />
